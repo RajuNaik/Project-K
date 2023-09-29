@@ -18,7 +18,7 @@ git clone -b dev https://github.com/RajuNaik/Project-K.git dev-repo
 cd dev-repo/notebooks
 
 # Deploy all notebooks in the directory
-for NOTEBOOK_FILE in *.dbc; do
+for NOTEBOOK_FILE in *; do
   if [ -f "$NOTEBOOK_FILE" ]; then
     # Import the notebook into the Databricks workspace
     databricks workspace import -l PYTHON -f "$NOTEBOOK_FILE" "$WORKSPACE_PATH/$NOTEBOOK_FILE"
