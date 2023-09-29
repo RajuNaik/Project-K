@@ -1,0 +1,29 @@
+name: Dev Deployment and Merge to QA
+
+on:
+  push:
+    branches:
+      - dev  # Trigger when changes are pushed to the dev branch
+
+jobs:
+  deploy_to_dev_and_merge_to_qa:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy to Dev
+        run: |
+          # Add your deployment script or commands here to deploy to the Dev environment.
+          # Replace with actual deployment steps.
+        env:
+          DEV_ENVIRONMENT_URL: ${{ secrets.DEV_ENVIRONMENT_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Add other environment-specific secrets as needed
+
+      - name: Merge to QA
+        run: |
+          git checkout qa  # Switch to the qa branch
+          git merge origin/dev --no-edit  # Merge changes from dev without editing the merge commit message
+          git push origin qa  # Push changes to the qa branch
