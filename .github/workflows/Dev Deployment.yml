@@ -16,7 +16,7 @@ jobs:
       - name: Deploy to Dev
         run: |
           chmod +x path/to/your-script.sh  # Ensure the script is executable
-          ./path/to/your-script.sh  # Run the deployment script
+          .dev_deploy_script.sh  # Run the deployment script
         env:
           DEV_ENVIRONMENT_URL: ${{ secrets.DEV_ENVIRONMENT_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
