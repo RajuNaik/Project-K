@@ -24,6 +24,6 @@ jobs:
 
       - name: Merge to QA
         run: |
-          git checkout qa  
+          git checkout origin/qa  
           git merge origin/dev  
           git push origin qa  
