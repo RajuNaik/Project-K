@@ -2,7 +2,7 @@
 
 # Azure Databricks CLI setup
 export DATABRICKS_HOST=adb-3943185736870612.12.azuredatabricks.net  
-export DATABRICKS_TOKEN=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  
+export DATABRICKS_TOKEN=dapi44a570e98a6f249ad4f856d8713cc3ff  
 export DATABRICKS_ORG_ID=3943185736870612  
 
 # Databricks workspace parameters
