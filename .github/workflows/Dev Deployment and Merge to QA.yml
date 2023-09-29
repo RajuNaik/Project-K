@@ -19,7 +19,7 @@ jobs:
           .dev_deploy_script.sh  
         env:
           DEV_ENVIRONMENT_URL: https://adb-3943185736870612.12.azuredatabricks.net
-          GITHUB_TOKEN: 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
+          GITHUB_TOKEN: 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
           # Add other environment-specific secrets as needed
 
       - name: Merge to QA
