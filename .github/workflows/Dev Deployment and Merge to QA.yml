@@ -3,7 +3,7 @@ name: Dev Deployment and Merge to QA
 on:
   push:
     branches:
-      - dev  # Trigger when changes are pushed to the dev branch
+      - dev  
 
 jobs:
   deploy_to_dev_and_merge_to_qa:
@@ -15,8 +15,8 @@ jobs:
 
       - name: Deploy to Dev
         run: |
-          chmod +x dev_deploy_script.sh  # Ensure the script is executable
-          .dev_deploy_script.sh  # Run the deployment script
+          chmod +x dev_deploy_script.sh  
+          .dev_deploy_script.sh  
         env:
           DEV_ENVIRONMENT_URL: https://adb-3943185736870612.12.azuredatabricks.net
           GITHUB_TOKEN: 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
@@ -25,5 +25,5 @@ jobs:
       - name: Merge to QA
         run: |
           git checkout qa  # Switch to the qa branch
-          git merge origin/dev --no-edit  # Merge changes from dev without editing the merge commit message
+          git merge origin/dev --no-edit  
           git push origin qa  # Push changes to the qa branch
