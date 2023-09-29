@@ -18,8 +18,8 @@ jobs:
           chmod +x dev_deploy_script.sh  # Ensure the script is executable
           .dev_deploy_script.sh  # Run the deployment script
         env:
-          DEV_ENVIRONMENT_URL: ${{ secrets.DEV_ENVIRONMENT_URL }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEV_ENVIRONMENT_URL: https://adb-3943185736870612.12.azuredatabricks.net
+          GITHUB_TOKEN: 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
           # Add other environment-specific secrets as needed
 
       - name: Merge to QA
