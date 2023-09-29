@@ -9,7 +9,7 @@ export DATABRICKS_ORG_ID=3943185736870612
 export WORKSPACE_PATH=/Shared/my_notebooks  
 
 # GitHub token for authentication
-export GITHUB_TOKEN=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
+export GITHUB_TOKEN=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
 
 # Clone the repository to access notebooks in the dev branch
 git clone -b dev https://github.com/RajuNaik/Project-K.git dev-repo
