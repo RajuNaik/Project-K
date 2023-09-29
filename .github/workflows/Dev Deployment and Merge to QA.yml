@@ -16,7 +16,7 @@ jobs:
       - name: Deploy to Dev
         run: |
           chmod +x dev_deploy_script.sh  
-          .dev_deploy_script.sh  
+          ./dev_deploy_script.sh  
         env:
           DEV_ENVIRONMENT_URL: https://adb-3943185736870612.12.azuredatabricks.net
           GITHUB_TOKEN: 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
