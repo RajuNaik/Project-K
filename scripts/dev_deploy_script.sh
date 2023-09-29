@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Azure Databricks CLI setup
-export DATABRICKS_HOST=https://adb-3943185736870612.12.azuredatabricks.net  
+export DATABRICKS_HOST=adb-3943185736870612.12.azuredatabricks.net  
 export DATABRICKS_TOKEN=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  
 export DATABRICKS_ORG_ID=3943185736870612  
 
