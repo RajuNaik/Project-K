@@ -1,0 +1,688 @@
+Numbers
+Variables
+Constants - A constant is a type of variable whose value cannot be changed.
+Eg:
+constant.py --A=1
+			  ABC=20 (Here variable name should be in capital)
+create main file now and call constant values
+main.py
+print(constant.A)
+
+Data type conversion: 
+We have 2 types of data type conversions in Python
+1.Implicit Type Conversion -- In Implicit type conversion, Python automatically converts one data type to another data type. 
+This process doesn't need any user involvement. --Eg: var1=12; var2=12.24; sum=var1+var2; sum=23.24 (gets highest data type to avoid data loss)
+2.Explicit Type Conversion --User need to convert one data type to another data type explicitly
+Eg:
+var1=10
+var2="123" --var1+var2 will through an error--to fix this--var3=int(var2)--sum=var1+var3 --this will work
+
+Python I/O: Takes input from user
+name=input("enter the name: ) --print(name)
+
+Namespaces:
+Built-in (like print,id etc)
+names to objects, and scope of a variable.global,non-local,local 
+
+Data types:
+Int
+Float
+Boolean
+strings--immutable
+	Indexing
+	Slice
+	String Concatenation
+	UPPER Menthod --strng.upper()
+	Lower Menthod --strng.lower()
+	String formatting
+	  eg:print("The {a} {a} {c}".format(a="1st",b="2nd",c="3rd"))
+	  if we have Quotes(",') with in the string then use ('''    ''')  or use escape character before Quotes("this is \"String\"")
+	  
+	  
+Compound data types:	
+Lists --
+collection of elements --mutable--can do indexing and slice
+mylist=["a","b","c",1,12.4,"sttrng"]
+for append at end--mylist.append()
+for remove at end --mylist.pop()
+to insert element at speicific location(acc indexing)--mylist.insert(index,value)
+to remove element from speicific location--mylist.remove(index)
+for sort --mylist.sort(reverse=False) --ascending
+for reverse sort --mylist.sort(reverse=True) --for descending
+to merge two lists --list1.extend(list2)
+to count speicific element --mylist.count(value to be counted)
+to copy from one list to other --newlist.copy(oldlist)
+to clear the list -- list1.clear() --will delete all the elements from list and keep empty list
+to delete complete list --del listname
+
+**comprehensive list: most efficient and time saving way to declare the lists
+newList = [ expression(element) for element in oldList if condition ] 
+lst=[int(i) for i in range(5)]
+print(lst)
+**strip() --funtion like ltrim,rtrim
+map() --
+			
+Tuples:
+A tuple in Python is similar to a list. The difference between the two is that we 
+cannot change the elements of a tuple once it is assigned whereas we can change the elements of a list
+my_tuple = (1, "Hello", 3.4)
+# Creating a tuple having one element --my_tuple = ("hello",)
+can be indexed and sliced
+
+Sets:
+A set is created by placing all the items (elements) inside curly braces {}
+A set is an unordered collection of items. Every set element is unique (no duplicates) and must be immutable (cannot be changed).
+However, a set itself is mutable. We can add or remove items from it.
+**can not update existing element(immutable)--No Indexing and slice since set is unordered
+However can add new elements
+to create empty set -- set1=set()
+to add new element --set1.add(value)
+to remove element from set --set1.remove(value)--can throw an error if given value is not found
+to remove element from set -- set1.discard(value) -- will not throw any error even though given value is not found
+**We can add a single element using the add() method, and multiple elements using the update() method. 
+The update() method can take tuples, lists, strings or other sets as its argument. In all cases, duplicates are avoided.
+set1={1,2,3,4,5}
+eg:set1.update("a","b") --merge string with set
+	set1.update(["x",99]) --merge list with set
+	set1.update(("l","m",100)) ---merge tuple with set
+	set1.update(set1) -- merge itself
+**Set Operations:
+Union(|) and intersection(&)
+eg:set3=set1.union(set2)  orelse set3=set1|set2
+	set3=set1.intersection(set2) orelse set3=set1 & set2
+Set Membership Test:
+eg:print("checking", 1 in set1) --True if available and false if not available
+
+
+Dictionaries:
+Python dictionary is an unordered collection of items. Each item of a dictionary has a key/value pair.
+**Key should be unique
+dict={"name":"raj","age":29,"loc1":"hyd","loc2":"bglr"}
+empty dictionary -- dict={}
+my_dict = {1: 'apple', 2: 'ball'} or 
+Indexing:
+print(my_dict['name']) --it will return the value of key called name, it will throw an error if name is not found
+to avoid above error -- use get method --print(my_dict.get('name')) --it will return None if name is not found
+**to add or update the elements in dictionary
+	it will update the value if key is found else it will insert it
+	eg:dict={"name":"raj","age":29,"loc1":"hyd","loc2":"bglr"}
+	dict["age"]=30 -- it will update age as 30 since key is found
+	dict["loc3"]="chennai" --it will insert it as new element since the key is not found
+to remove any element -- dict.pop("loc1") --it will remove loc1 key and its value
+to clear dictionary -- dict.clear()
+to delete dictionary --del dict
+
+**nested dictionary:
+Dict = {'Dict1': {1: 'Geeks'},
+        'Dict2': {'Name': 'For'}}
+		
+Arrays:
+same as list --
+find the element in a array:
+index(x) --returns the first index value for x 
+
+array syntax:
+import array as ar
+a=ar.array("i",[1,2,3,4,5]) #here i is the data type integer
+print("another way of pringt array is: ",end=" ")#print array values
+for i in (a):
+    print(i,end=" ")
+#add new elements in above array
+
+a.append(6) --add 6 at the end of array
+a.insert(2,10) --insert 10 at index 2
+#slicing or indexing
+sliced_val=a[0:2] --print from index 0 to 2 --here 2 is inclusive
+#remove elements from above array
+a.pop() #remove last element
+a.remove(5) #remove first 5 found
+
+---------------------------------------------------------------
+Input Funtions:
+var1=input("enter the value:") --it will expect value to be entered from user  and takes only one value
+if we wanted to read multiple values at a time then --use split function
+x,y,z=int(input("enter values here:").split()
+to enter the list manually --
+x=[int(x) for x in input("enter the values here: ").split()]
+
+** what if we wanted to print all entered values in single output:
+print("first value{} second value{} third value{}".format(x,y,z)) --here we can also use index like below
+print("first value{0} second value{0} third value{1}".format(x,y,z)) --it will print x in first two output values acc to their index
+
+output functions:
+end function in print--by default it is new line in print
+print(x,end="") --here end can be spaces or tabs or any other character
+
+sep parameter in print():
+seperator is to seperate output values eg:
+print(x,y,z,sep="@")  -- so it will seperate values of x,y,z with @
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+Python Operators:
+Arithmatic Operations -- +,-,*,/ --- ** for exponent and // for quotient and % for remainder
+Logical operators --and,or,not
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Python Flow Control --Statements and loops
+if <cond> :
+   <body>
+------------
+if <cond>:
+	<body>
+elif <cond>:
+	<body>
+else <optional cond>:
+	<body>
+--------------
+if <cond>:
+	<body>
+	if <cond>:
+	<body>
+	else <optional cond>:
+else <optional cond>:
+	<body>
+--------------------------------------------------
+For loop:
+syntax:
+for <variable> in (list/string/tuple):
+	<body>
+--
+with range: it increments the value in range automatically
+for i in range(1,11):  --here 11 is exclusive
+	<body of for loop>
+---------------
+while loop:
+while <cond> :
+	<body>
+	<incr or decr>
+--
+while with else:
+
+while <cond> :
+	<body>
+else:
+	<body>
+--------------------------------------------------------
+
+
+break and continue:
+
+break --The break statement terminates the loop containing it. Control of the program flows to the statement immediately after the body of the loop.
+If the break statement is inside a nested loop (loop inside another loop), the break statement will terminate the innermost loop.
+Eg:
+lang=["python","java","swift","c","C++"]
+for i in lang:
+    if i in ("swift","C++") :
+        break
+    print(i) --Here if lang is either swift or C++, the loop will be exited from rest of the iterations:
+----
+continue:
+lang=["python","java","swift","c","C++"]
+for i in lang:
+    if i in ("swift","C++") :
+        continue
+    print(i) -- Here if lang is either swift or C++, the loop will skip that perticular iteration and continue with rest of the iterations
+-----------------------------------------------------------------------------------------------------------------------------
+
+Python pass Statement:
+In Python programming, the pass statement is a null statement. 
+The difference between a comment and a pass statement in Python is that while the interpreter ignores a comment entirely, pass is not ignored.
+
+i=20
+
+if i>0:
+ pass --do nothing but it will not through any error
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+Funtions: 
+2 types --User defined and built in(like print,input,len,sum,int,float etc)
+Syntax:
+def <fun_name>():
+	<statements>
+	
+#now call the funtion
+fun_name()
+
+Eg:
+def greet():
+    print("Hello")
+greet()
+-------
+Funtions with single argument:
+def greet(name):
+    print("Hello",name)
+
+greet("jack")
+greet("John")
+----------
+Funtions with multiple argument:
+def add_num(n1,n2):
+    sum=n1+n2
+    print(sum)
+
+number1=10
+number2=20
+add_num(number1,number2)
+------
+Return --it returns the result of the function to where it is being called
+--once return is called, it terminates the rest of the statements in function and jumps back to function where it is being called
+
+def mult_func(n1,n2): --Here n1,n2 are positional arguments
+    mul=n1*n2
+    sum=n1+n2
+    return sum
+    print("multiplication of", n1, "and", n2, "is :",mul)
+    
+
+
+num1=int(input("Entet the first value: "))
+num2=int(input("enter the second value: "))
+
+result=mult_func(num1,num2)
+print(result)
+------------------------------------------------
+default argument values -- if we dont pass any values to the arguments, in such cases it will take default values
+eg:
+def sum_fun(n1=1,n2=2):   --here n1=1,n2=2 default values, it will take default values if we dont pass the values from calling function
+    sum1=n1+n2
+    print(sum1)
+
+v1=100
+v2=200
+sum_fun(v1)      ##here we are not passing the expected second argument, hence it will be replaced by n2=2
+------------------------------------
+key word arguments: order of the arguments doesnot matter this time
+def greet_fun(msg,name):
+    print(msg,name)
+
+greet_fun(name="Raju",msg="How are you?")
+-------------------------------
+Python Recursion: Recursion is the process of defining something in terms of itself.
+Factorial:
+def fact(num):
+    if num == 1:
+        return 1
+    else:
+        return(num * fact(num-1))
+num=int(input("Enter the value: "))
+result=fact(num)
+print(result)
+-------------------------
+Python Anonymous/Lambda Function:
+In Python, an anonymous function is a function that is defined without a name.
+While normal functions are defined using the def keyword in Python, anonymous functions are defined using the lambda keyword.
+Hence, anonymous functions are also called lambda functions.
+
+Eg:
+double=lambda n:n*3 --here it is taking n as argument and performing the expression
+print(double(10))
+--
+lambda can also take multiple arguments but only ONE EXPRESSION
+Eg:
+max_val=lambda n1,n2: n1 if n1>n2 else n2 --here we have 2 arguments n1 and n2 BUT ONLY ONE EXPRESSION
+print(max_val(1,2))
+----------------------------------------------------------------------------------------------------
+Global and local variables:
+variable defined outside function is global by default and inside function is local by default
+global keyword is used to make loca variable to global--though it is not a best practice
+--------------------------------------------------------------------------------------------
+Python Modules:
+like math --it includes all math related functions available inside it, we just have to import and use them like below
+import math
+val1=36
+result=math.sqrt(36) --it gives you as 6--here sqrt function is available in math module
+--
+***to list out all the functions available in certain module use below command
+
+dir(math)
+print(dir(math))
+--------------------------------------------------------------------------------------------------
+Python packages:
+**revisit
+--------------------------------------------------------------
+Files:
+Open--Read/Write/Append--Close
+
+Read mode--file1=open("message.txt","r") --Opening the file in read mode--
+Eg:
+file1=open("message.txt") --Opening the file--however, by default it is a read mode
+read_content=file1.read() --Reading the content
+print(read_content) -- Printing the content
+file1.close() -closing the file
+----
+write into the file --conditions --if file doesnot exist, it will create a file, if exist it will overwrite
+Case 1: When file doesn't exist --? --it will create new
+file1=open("python.txt","w")
+write_content=file1.write("This is first line in python file\n")
+write_content=file1.write("This is second line in python file")
+
+Case2: When file exist--it will overwrite
+file1=open("python.txt","w")
+write_content=file1.write("New content to overwrite existing file\n")
+--
+append:
+file1=open("python.txt","a")--here "a" is for append mode
+write_content=file1.write("append 3\n")
+---------------------------
+
+Python lines: Read lines in a list
+Eg:
+file1=open("python.txt","r")
+readline_content=file1.readlines()
+print(readline_content)  -o/p is ['append 1\n', 'append 2\n', 'append 3\n', 'append 3\n']
+
+We also write in lines like below:
+file1=open("python.txt","w")
+readline_content=file1.writelines(["readline1","\nreadline2"])
+-----------------------------------------------------------------------------------------------------------------------
+Python directories:
+cwd--current working directory --like pwd in Unix--but to know current working directory, we need to import os
+Eg:
+import os
+print(os.getcwd())
+--
+changing directory:
+Eg:
+import os
+current_dir=os.getcwd() --for current working directory
+change_dir=os.chdir("new location)--it moves to new location from current directory
+list_all_dir=os.listdir() --it will list down all the files and directories
+os.mkdir() --to create new directory
+os.rename("old file/dir","new file/dir") --to rename file or directory
+os.remove("file name ") --to remove file 
+os.rmdir("directory name") --to remove directory--make sure directory is empty before removing else it will through an error
+-----------------------------
+
+Exception and handling them:--try: --where exception may happen--except: --like else part
+Eg:
+num1=10
+num2=0
+result = num1 / num2
+print(result)          --This will through an exception issue(ZeroDivisionError) since we are deviding 10 with 0
+--to handle this use try and except like below:
+try:
+    num1=10
+    num2=0
+    result = num1 / num2
+    print(result)
+
+except:
+    print("exception occured, please try again") --it is like if and else, if there a exception in try block then exception block will be executed
+	if there are no exceptions in try block, then except block will completely omitted.
+---------------------
+Python try...finally
+try:
+except:
+finally:  --it is optional and it if called, it will be executed at any cost no matter what.
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+OOPs concepts:
+Class:A class is a blueprint for the object.
+Python inheritance --class derived from main class
+method overrdiing--method from child class will override method from parent class if method names are same
+multiple inheritance --a class derived from more than one base class
+Operator Overloading in Python
+-------------------------------------------------------------------------------------------------------------------------------------
+
+Date and time concepts:
+import datetime as dt --here datetime is the module we need import
+
+eg:
+date1=dt.date.today() --here dt is the method alias of datetime, date is the method, and it returns current system date
+time=dt.datetime.now() --here dt is the method alias of datetime, datetime is the method, and it returns current system timestamp
+
+date2=dt.date(2022,10,21) --2022-10-21
+time1=dt.datetime(10,20,15,12234) --10:20:45.12234
+
+sleep(no of seconds) --it will suspends the execution for given no of seconds
+Eg:
+import time
+print("statement 1") --it will be printed immediately
+time.sleep(10) --Delays the exection for 10 seconds
+print("statement 2") -- print this statement after above 10 seconds
+-------------------------------------
+
+Special methods:
+like - regex,subprocess,datetime,json,csv,requests,argparse,configparser,database access,logging,smtplib,pandas
+
+regex:
+json:
+csv:
+pandas:
+
+----------
+RegEx:
+MetaCharacters - Metacharacters are characters that are interpreted in a special way by a RegEx engine. 
+Here's a list of metacharacters: [] . ^ $ * + ? {} () \ |
+
+[] - Square brackets
+[abc] - Here, [abc] will match if the string you are trying to match contains any of the a, b or c.
+We can also use -
+[a-e] is the same as [abcde]
+[1-4] is the same as [1234]
+[0-39] is the same as [01239]
+------------
+invert(^) -meaning not eg: [^abc] means any character except a or b or c.
+-------------------------
+.(period) --one character Eg: ..  it will match 2 chars
+------------------------
+^ - Caret - to check if a string starts with a certain character.
+Eg: ^a -- it will strictly start with a
+^ab --strictly start with a and next immediate character should be b
+---------------------------
+$ - Dollar -- to check end character
+a$ -- like a,aba,formula -- all are ending with a
+---------------------------
+* - Star --* matches zero or more occurrences of the pattern left to it
+Eg:
+ma*n --here there can be any number of a's(occurrences) in place of *(CAN BE ZERO in place of *)
+------------------------------
++ - Plus--+ matches one or more occurrences of the pattern left to it 
+ma+n --mn is not true --since there is no atleast one a
+		here there can be any number of a's in place of *(SHOULD BE ATLEAST ONE OCCURRENCE in place of +)
+------------------------------------------
+
+? - Question Mark --The question mark symbol ? matches zero or one occurrence of the pattern left to it
+ma?n -- man is true, since there is one a occurrence
+	 --mn is true zero a occurrence
+	 --maaan is not true because there are more than one a occurrence
+		here there can be any number of a's in place of *(ZERO OR ONE OCCURRENCE in place of ?)
+-------------------------------------------
+{} - Braces
+Consider this code: {n,m}. This means at least n, and at most m repetitions of the pattern left to it.
+Eg:
+a{2,3} -- minimum 2 a's and maximum 3 a's, then only it will match
+		--if given string is "abc daat" --one match  at daat 
+		--if given string is aabc daaat --2 matches --at aabc and daaat
+-------------------------------------------------
+| - Alternation --Vertical bar | is used for alternation (or operator).
+a|b --if string is cde -- no matches because it does not hold either a or b
+	--if string is ade -- one match for a
+	--if string is acdbea --3 matches -a,b,a
+---------------------------------------------------
+() - Group -- Parentheses () is used to group sub-patterns.
+Eg:(a|b|c)xz match any string that matches either a or b or c followed by xz
+(a|b|c)xz --if given string is ab xz --no match since b is not immediately followed by xz
+		  --if given string is abxz --one match --since b is immediately followd by xz
+-------------------------------------------------------
+\ - Backslash --used to escape various characters including all metacharacters
+-----------------------------------------------------------
+\A - Matches if the specified characters are at the start of a string.
+Eg:
+\Athe --if any given string is starting with 'the' then match found 
+
+\b - Matches if the specified characters are at the beginning or end of a word
+\bfoo -- ex: football
+foo\b --ballfoo
+
+\B - Opposite of \b. Matches if the specified characters are not at the beginning or end of a word.
+\Bfoo --ex-football no match since football is starting with foo
+		ex--afootball is true
+foo\B -- 'the afoo test' true
+
+\d - Matches any decimal digit. Equivalent to [0-9]
+\d --ex:12abc3
+
+\D - Matches any non-decimal digit. Equivalent to [^0-9]
+\D --1ab34"50 --returns --ab"
+--------------------------------------------------------------------------------------------------------------------
+re.findall()
+returns all matches patterns from a string to a list:
+
+import re
+string = 'hello 12 hi 89. Howdy 34'
+pattern = '\d+'
+result = re.findall(pattern, string) 
+print(result) --# Output: ['12', '89', '34']
+--------------------------
+re.split() --splits the string where there is a match and returns a list of strings where the splits have occurred.
+consider same above program --
+ret2=re.split(pattern,str) --o/p--['This is ', ' a string ', ' for ', ' test', 'ing', '']
+-------------------------------------------
+re.sub() -- The method returns a string where matched occurrences are replaced with the content of replace variable
+syntax --re.sub(pattern, replace, string)
+for ex: find the white spaces and replce with nothing:
+string='abc 12\
+de 23 \n f45 6'
+
+to find white spaces --pattern = '\s+'
+replace string=replace=''(means nothing)
+new_string = re.sub(pattern, replace, string) --it will replace spaces with nothing(like we are removing spaces)
+----------------------------------------------------
+re.subn()
+The re.subn() is similar to re.sub() except it returns a tuple of 2 items containing the new string and the number of substitutions made.
+# Output: ('abc12de23f456', 4)
+------------------------------------------------------
+re.search()
+The re.search() method takes two arguments: a pattern and a string. 
+The method looks for the first location where the RegEx pattern produces a match with the string.
+syntax: match = re.search(pattern, str)
+
+import re
+string = "Python is fun"
+# check if 'Python' is at the beginning
+match = re.search('\APython', string)
+if match:
+  print("pattern found inside the string")
+else:
+  print("pattern not found")  
+----------------------------------------------------------------
+match.group() --The group() method returns the part of the string where there is a match.
+
+import re
+string = '39801 356, 2102 1111'
+# Three digit number followed by space followed by two digit number
+pattern = '(\d{3}) (\d{2})'
+# match variable contains a Match object.
+match = re.search(pattern, string) 
+if match:
+  print(match.group())
+else:
+  print("pattern not found")
+# Output: 801 35
+
+
+Here, match variable contains a match object.
+
+Our pattern (\d{3}) (\d{2}) has two subgroups (\d{3}) and (\d{2}). 
+You can get the part of the string of these parenthesized subgroups. Here's how:
+>>> match.group(1)
+'801'
+
+>>> match.group(2)
+'35'
+>>> match.group(1, 2)
+('801', '35')
+
+>>> match.groups()
+('801', '35')
+	
+------------------------
+match.start(), match.end() and match.span()
+The start() function returns the index of the start of the matched substring. Similarly, end() returns the end index of the matched substring
+>>> match.start()
+2
+>>> match.end()
+8
+>>> match.span()
+(2, 8)
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+Json special methods in Python:
+sample json data:
+Eg:  person={
+"name":"Ram",
+"age":29,
+"loc":"Hyd",
+"languages":["English","Telugu"]
+}
+----This is also called json string in Python
+
+Python basically CONVERTS JSON DATA INTO DICTIONARY USING LOADS() AND LOAD() METHODS --here loads() for json string, load() for json file 
+Eg:
+import json
+person={"name":"Ram","age":29,"location":"Hyd","salary":1000,"languages":["English","Hindi","Telugu"]}'
+person_dict=json.loads(person)
+print(person_dict) --{'name': 'Ram', 'age': 29, 'location': 'Hyd', 'salary': 1000, 'languages': ['English', 'Hindi', 'Telugu']}
+if you want to print certain elements --
+print(person_dict["languages"])
+------------------------------------------------
+If we want to read data from json file:
+with open('path_to_file/person.json', 'r') as f:
+  data = json.load(f)
+print(data)--Output: {'name': 'Bob', 'languages': ['English', 'French']}
+---------------------------------------------------
+Dictionary to json string
+
+dict={"name":"Ram","age":29,"loc":"hyd"}
+jsn=json.dumps(dict) --converts into json --in dumps , s stands for string
+
+sameway, we can write dictionary into json file:
+dict={"name":"Ram","age":29,"loc":"hyd"}
+
+with open('person.txt', 'w') as json_file:
+  json.dump(dict, json_file) --converts into json --here it is just dump
+-------------------------------------------------
+Python pretty print JSON:
+import json
+person_string = '{"name": "Bob", "languages": "English", "numbers": [2, 1.6, null]}'
+# Getting dictionary
+person_dict = json.loads(person_string)
+o/p:
+{
+    "languages": "English",
+    "name": "Bob",
+    "numbers": [
+        2,
+        1.6,
+        null
+    ]
+}
+--------------------------------------------------------------------------------------------------
+
+csv special methods in Python:
+Let's read this file using csv.reader():
+import csv
+with open('people.csv', 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        print(row)
+		
+o/p -- 
+['Name', 'Age', 'Profession']
+['Jack', '23', 'Doctor']
+['Miller', '22', 'Engineer']
+------
+Lets write into csv file:
+import csv
+with open('protagonist.csv', 'w', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(["SN", "Movie", "Protagonist"])
+    writer.writerow([1, "Lord of the Rings", "Frodo Baggins"])
+    writer.writerow([2, "Harry Potter", "Harry Potter"])
+	
+	
+
+
+		

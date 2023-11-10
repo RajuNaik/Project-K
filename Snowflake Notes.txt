@@ -1,0 +1,241 @@
+1.Snowflake Architecture
+cloud services(security,optimization,metadata)
+|
+compute layer(cache,virtual wh)
+|
+storage layer(eg.s3)
+
+2.What is shared disk and shared nothing architecture and their drawbacks.
+--shared disk ->multiple compute nodes share one disk hence scalability issue,bottle neck while reading and qriting
+--shared nothing-->one compute node share one disk.draback is data will shuffle when one node expect data from another and when any node is failed
+3.Hence in snowflake, compute node and storage layers are independant and they can scale up and down independently.
+This is called multi cluster shared data architecture
+4.snowflake cache in cloud services layer and compute layer and its uses
+5.if we run one query, it will fetch from storage layer, if we run same query again it will read from cloud services cache, and if we disable this 
+cloud services cache, it will read from next layer's cache that is compute layer.
+
+***data stored in storage layer is in column format and compressed and encrypted. When you fire the query it will de compress and decrypt and send
+it back to cloud servces over the network.
+===================================================
+Clustering(distribution in synapse): The process of grouping micro partition(also called table file) is called clustering. Micro partition usually b/w 50-500MB
+**SF will create micro partition based on how we insert or load data automatically on each table.
+**each micro partition stores data in column format.
+**Clustering can be on one or more columns
+eg:
+create table emp(
+empid int,
+name varchar2(20),
+location varchar2(20)
+) cluster by (location)
+**SF will charge for micro partition. Hence if you want to avoid clustering, we can insert data into tgt table order by cluster_column
+**While choosing cluster key, choose from lowest cardinality to highest cardinality(means, lowest distinct is the cluster key)
+for eg.in emp table, location is the cluster key instead empid or salary
+
+=================================================
+Performance tuning:
+query optimization, create cluster
+in SF, there will not be any PK's or Indexes. But still ACID properties are guaranteed using micro partitions
+====================================
+Types of internal stages in SF:
+1.User stages @~
+2.Table stage @%
+3.Named stage @
+
+To load file from local to SF, we can directly upload using UI if it is small.
+IF it is a huge file, first load the file into table stage using put command and then load into SF table using copy command
+and vise versa, if you want to download data from SF to local, copy the data fri SF table stage first using copy command and then use get command
+to download the file from stage to local.
+
+**Internal stages are automatically created for you. to list down all the stages, show stages in database_name.
+It will also display the external stages but storage_integration column would be null for internal stages.
+
+** we can not load/copy zipped file from external storage like S3 to SF.
+=================
+We can create a view on top of S3 file and query the view. We can also apply transformations
+We can create a table on top of S3 file and query the view. We can also apply transformations
+Diff is view will be refreshed automatically whenever it encounter a new file in S3 where as in table it cant.
+
+???When we have view to query the S3 file, why do we need external table?
+Ans is, view will query all files from S3 every time and time consuming incase of huge file in S3.
+Where as in external table, it maintains the metadata like file name,registerd/un registered, MD5 result of each file in information schema.
+So quering external table is recommended over view.
+==============
+Partitioning on External Table:
+suppose, if you dont want to scan all files every time and avoid unwanted files, we can create partition so that it will scan only those files,
+
+create external table ext_tab(
+dept string as substring(metadata$filename,5,10), --segrigate file names matching
+name string as (value:c1::string),
+etc
+partition by (dept)
+============================
+COPY command options:
+Validate=no of rows| etc--this wont load the data into table
+on_error=continue --default it is abort
+pattern=*emp.csv 
+
+**How to capture errpr records:
+ON_ERROR=continue
+to view error records--select * from table(validate(emp,job_id==>'query id'))
+
+to create a error table--
+create or replace error_tab select * from table(validate(emp,job_id==>'query id'));
+
+enforce_length=true|false --if target table in SF has less length, it will automatically increase
+Force=True|false --default is false
+
+**SF maintains the hash value for each file in S3 so that it wont load same file again.If we make Force as True, it will load same file again
+Purge=True|False --once file is loaded into table, file will be deleted from S3.Defualt it is False
+
+**there is a view called Load_History in information schema, that holds all the files information of past 14 days copy command loaded into table.
+==========================================================================
+Loading JSON/XML data:
+use parse_json(data) --for json parser
+table(flatten(column)) --for flattening the array
+==========
+
+We can not capture error records using snowpipe.
+We can not alter copy command inside snowpipe
+
+Create snowpipe on bucket level not folder level. Create one pipe for S3.
+
+**COpy command will look for only hash change in file(if new file arrived or any existing file got updated)
+**where as snowpipe, will look for change in name of the file, it wont check on data inside the file.
+================
+Data sharing in SF:
+No need to physically move data from one storage to another storage of anther account. We just have to share metadata information.
+using share i.e create share share_name;
+alter share_name add account'second accoutn name'
+grant all permissions on the required objects/tables to above share 
+check for inbound of second account in shares and create a database there itself.When you query this database it will actually fetch data from first 
+account.
+**secure, since we are sharing tables to second account and we dont want to expose all the columns in that table.
+in that case, create a view on top of table with required columns and grant the select to share_name but you will see an error saying
+only secure view can be shared. hence secure keyword while creating the view.
+==================
+Time Travel:
+select * from emp(offset=60*min)
+1.create a backup table selecting from emp with offset
+2.truncate actual table
+3.Insert into actual table selecting from backup table.
+===============================
+Faile safe feature in SF:
+Once the time travel is end, it will enter into faile safe. For transient table it is 0 and for permanent it is 7.
+===============
+Types of tables:
+1.Permament table(create table emp)--retention period(time travel)=true,faile safe=true
+2.TRansient table(create transient table emp)--retention period(time travel)=true,faile safe=false
+3.Temporary table(create temporary table emp)--retention period(time travel)=false,faile safe=false
+                                              --temporary table will only be available for a session or worksheet.
+==========================================================
+Cloning:
+we will map the metadata of a main table to bkp table. we dont physically copy the data. create table emp_bk clone emp;
+however, if we make any dml operation on main table it will not reflect in cloned table and vice versa.
+reason is , whenever you make any change SF will create a seperate snapshots of table file in storage location.
+=========
+SWAP
+we can swap two tables in SF--alter table1 swap with table2;
+**Here only metadata will change and not actual storage.(swap[ing pointer)
+======================
+Tasks:
+limitations: We can make two tasks as a parent
+Task can not send email notifications
+==========
+Streams:
+Types of stream:
+standard streams--keep track of all dml(insert,delete,update) operations happened on source table.
+append only streams--keep track of only insert operations happened on source table.
+Insert Only Stream: This stream is doing same job as Append only stream, only difference is that these are only applicable on external table and not on normal tables.
+
+short coming of creating streams on table - it is a additional over head for developers
+and streams may run under stale if they are not accessed for a quite long time and we will have to recreate them.
+
+To overcome these short comings, snowflake came up with new concept called, dynamic table.it is similar to delta live tables (DLT) in databricks.
+eg:
+CREATE OR REPLACE TABLE raw
+(var VARIANT);
+
+CREATE OR REPLACE DYNAMIC TABLE names
+TARGET_LAG = '1 minute'
+WAREHOUSE = mywh
+AS
+SELECT var:id::int id, var:fname::string first_name,
+var:lname::string last_name FROM raw;
+
+Qns:
+
+1. Introduction ( Various techonoligies what are the implementations and your role on that)?
+
+2. have you implemented any securuties on snowflake. Priority 1
+
+3. What is cloning in snowflake, If we cloned one object it will create any extra micropartition?
+
+4. DO you ever worked on snowpark?
+
+5. If you written any python or snowpark procedure what is the trigger point for execution.
+
+6. SF Archetecture?
+
+7. I have an account in Project level and I will assign some credits to each warehouse and if certain credits exceeded it should notify how you achive this?
+
+8. Do you know time travel in snowflake.How I can change my Time travel parameters? Priority 2
+
+9. What is dynamic tables?
+
+CREATE [ OR REPLACE ] DYNAMIC TABLE <name>
+
+  TARGET_LAG = { '<num> { seconds | minutes | hours | days }' | DOWNSTREAM }
+
+  WAREHOUSE = <warehouse_name>
+
+  AS <query>
+
+  [ COMMENT = '<string_literal>' ]
+
+10. what are the optimization things you will do?
+
+11. Snowpipe implementation.
+
+12. which language you preffered for snowflake procs. exception handling?
+
+13. What is the maximum limit in snowflake table to store single record.
+
+14. Have you worked on flattern function in snowflake, where you implemented.
+
+15. Suppose you are executed on procedures but are getting some error? might be something was missing due to that you are getting error what are those.?
+
+16. what is fututre grants?
+
+17.
+ 
+---------------------
+
+1. Introduction ( Various techonoligies what are the implementations and your role on that)?
+
+3. what are the optimization things you will do?
+
+2. I have an account in Project level and I will assign some credits to each warehouse and if certain credits exceeded it should notify how you achive this?
+
+4. What is the maximum limit in snowflake table to store single record.
+
+5. Have you worked on flattern function in snowflake, where you implemented.
+
+6. what are the languages supported for stored procedures in Snowflake?
+
+7. In javascript proc how to use bind variables?
+
+6. DO you know ROles and Privilages in snowflake?
+
+What type of Access control available in snowflake?
+
+7. what is fututre grants?
+
+8. What Scale out?
+
+9. What is Sclae up and down?
+
+10. What is stream ? one example
+
+Products
+
+11. Window Functions?

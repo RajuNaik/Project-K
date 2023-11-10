@@ -1,0 +1,87 @@
+ADF:
+
+validation activity to check if file arrived.it expects dataset name.
+
+another way to check for source files:
+get metadata of source file using getmetadata activity and check for file name or count or size etc.
+and use logical operator like equals and inside true map it to copy activity.
+---
+to delete the source file , after successful exexution, use delete activity.
+-----------
+types of triggers:
+scheduled --schedule time in UTC
+Tumbling--metion time for Delay
+Event based--mention blob storage includint file name
+--------------
+to read file from any other web server use http linked service
+
+----------------
+Dataflows-code free transformations
+when we create dataflow, ADF will actually converts it into spark and run on the clusters.
+Dataflow service is not available in all regions. And does not support all connections
+Currently it is supporting only Blob and ADLS. If you want to read data from or write data to other storages, you may have to bring the data first
+into ADLS or Blob and proceed.
+Not suiatable comlex logics.
+ source and sink are mandatory for dataflow
+
+We can define our own partitioning while reading data source in dataflow.
+
+Parameterization flow:
+1. Create parameters at LS level(may be for Blob or SQL DB server or DB name or user or password)
+2. Create parameters at DS level(may be for file name or table name)
+3. while creating DS, need to again parameterize the parameters created in LS
+4. Create parameters at pipeline level and assigne these parameters in DS
+5. Provide parameters values at run time from Triggers.
+
+so basically , parameters flow is from pipeline -->DS-->LS
+
+-----
+
+1. what is pipeline
+2. what is LS
+3. what is DS
+4. what is trigger --and types
+5. what is variable
+6. what is parameters
+7. what is global parameter and use of it
+8.what is user properties --key value pair --like source = abc, target =bcd --useful for debugging for support team
+9. at how many levels we can define parameters --LS,DS,pipeline and adf account level (global param)
+10.what is annotations in ADF --like tags in IICS --for easy filteration of pipelines
+11.difference between ADF user properties and annotations 
+12. difference types of IR -- 3 types
+	Azure / AutoResolveIR 
+	self hosted
+	Azure SSIS 
+
+13. can we call one pipeline from another pipeline? --yes, we can, using execute pipeline activity
+14.
+-------------------------------------------------------------------------------------------
+
+RealTime Scenarios:
+1.incremental loading from sile to db --using water mark table as lookup--same as in iics,store max date in lookup and call it for date check
+2.read data from API's using REST
+3.automatically load from files to db as per files names --product.csv to product table--usinf get metadata--iterate over child items--parameterizesource and targets
+4.how to handle schema mismatch btwn source and targer--using logging enables--fault tolerance as wanrining--load error records in some blob
+5.improve the performance of copy activity from file to db--increase the DIU units
+6.restart the mapping from point of failure--in monitor-- restart from failed activity
+7.how to send notification if pipeline failes--use web activity and call logic app
+
+1. Handle Error Rows in Data Factory Mapping Data Flows
+Conditional Split - Router in Infa
+Derived Column - to add new column
+
+ADF Interview Qns:
+
+1.what is RG?
+2.What is pipeline? Naming standard-pl_
+3.Whata is Dataflow? where we apply business logic most of the cases.
+4.What is source and what is sink?
+5.What is LS and what is DS?@item().TABLE_SCHEMA
+6.What is Region? What is AZ?
+6.What is storage account? or what is Azure blob? What is ADLS?
+7.Types of tiers in Blob or ADLS? 
+cost bases is on storage in hot. 1GB not for access
+cost basis is on access in cool/archive
+8.How to upload the files in blob or ADLS?--using storage explorer.
+9.What is ARM? Azure Resource Manger
+10.

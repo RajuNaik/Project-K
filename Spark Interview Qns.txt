@@ -1,0 +1,454 @@
+1.what is MPP?
+2.hadoop vs spark
+3.How spark is different from Map Reduce?
+4.difference between databricks and spark
+5.Can you talk about memmory management in spark
+6.different types of clusters in Databricks
+7.difference between client mode and cluster mode in deploying spark applications
+8.what is cluster manager
+9.difference between spark session and spark context
+10.How parallelism is achieved in spark?
+11.Can you talk about RDD,Dataframe and Dataset--
+RDD is very low level and native API to spark.We have to write lot of code and it is difficult to understand and maintain.We have to tell how and what to do. No schema hence it impacts the performance.It supports almost all the languages.
+RDD support only on-heap memmory and does not suuport off-heap memmory and it has to perform garbage collection frequently and it is a additional overhead of spark.
+
+DF -- high level API. DF is a columnar and row fromat API just like any other table in relational database.Highly optmized and catalyst optmizer will apply all optmization techniques automatically as it allows schema.Supports almost all programming languages
+DF supports both on-heap and off-heap memory and garbage collection scanning can be mininized.
+**Spark will chekc type safety at run time. It will not throw any error at compile time
+
+Dataset--supports only Java and Scala.
+Dataset supports both on-heap and off-heap memory and garbage collection scanning can be mininized.
+**Spark will chekc type safety at compile time itself.
+
+12.What is Tranformation and Action in spark
+13.What is lazy evaluation and why it is imp
+14.what is DAG
+15.what do you mean by immutability in spark and what is the advantages of it
+16.Can you talk about spark architecture
+17.difference between driver, worker and executor
+Driver is mastermind--it will create logical execution pla, optmization plans, submit the applications to worker by interacting with cluster manager
+Worker--separate node in cluster, logically divided into executors
+Execuotr--nothing but a JVM(java virtual machine),contains cores and the on-heap memmory
+
+18.How partitions are created in spark
+19.what is shuffling in spark processing
+20.difference between narrow transformation and wide transformation
+21.what are jobs vs stages vs tasks
+when any action is called(write,print,collect etc) or physical data movement is required, then application will be submitted to driver node as a jobs
+and if shuffling required(in case of wide transformations) then stages will be created.A stage is an intermediate unit of execution within a job
+A task is the smallest unit of work in Spark and represents the actual computation to be performed on a single partition of data
+
+22.What are the bigdata file formats
+	Parquet, Avro, ORC, csv, Json
+23.What is the difference between Parquet and Avro
+	Parquet --columnar, suitable for OLAP(Datawarehousing), like write once and read many times--more for analytical purpose,
+	immutable in nature,read heavy process
+	
+	Avro- row based storage, suitable for OLTP(transactional process), more for transactional purpose
+
+24.what are the programming languages supported by Spark
+	R,SQL,Python and Scala
+25.What is catalyst optmizer
+
+######################################################################################################################################################
+
+Performance Optimization: Spark/Databricks Interview Question
+
+1.What is broadcast join?
+default limit of broadcast join dataset it 10MB.
+
+2.What is the role of repartition and coalesce in performance optmization
+3.what is data skew? --un evenly distributed partitions--to avaoid this we need to do salting technique
+4.what is salting technique--splitting larger partition into smaller
+5.whart is AQE
+6.what is cache and persist
+7.what are the different level of persist
+8.What is dataframe checkpoint?
+9.can you compare cache vs persist vs checkpoint
+	cache--only memory
+	persist --memory and disk
+	checkpoint--only disk
+	
+10.difference between partitionBy and bucketing
+--while writing the operation
+--paritionBy -->will create separate folder and place the paritions in it, more suitable for low cardinality keys. eg. of you performing partitionBy on a column like emp id, then you will end with having more number of partitions which is not a good practice.
+--bucketing-->we can restrict no of folders while writing.suitable when you have high cardinality
+
+11.What is speculative execution?
+--suppose, if any one/more than one tasks are taking longer time to execute(longer than 3 times of completed tasks) because of any reason, in that case spark engine will create backup tasks for these kind of tasks.
+It will happend only if 90% of the over all job execution is completed 
+once backup tasks are completed, spark engine will kill the other to be completed tasks
+
+12.How to improve the performance for JDBC read/write in spark?
+--mention fetch size
+--increase the parallelism, that is there is parameter called Numpartitions --so that spark engine will create no of parallel connections with external db,here we need to mention partition column, lower bound value, and upper bound value
+--we can predicate, I like I want to pull only certain columns, and appy filter on unwanted records
+
+eg.:
+url = "jdbc:sqlserver://localhost:1433;databaseName=mydb"
+table = "mytable"
+user = "myuser"
+password = "mypassword"
+
+properties = {
+    "user": user,
+    "password": password, 
+    "fetchsize": "10000", --records fetch from source per iteration
+    "batchsize": "5000", --write into tgt
+    "queryTimeout": "600",
+    "numPartitions": "10",
+    "partitionColumn": "EMPLOYEE_TYPE",
+    "lowerBound": "0",
+    "upperBound": "100",
+    "predicates": "EMPLOYEE_TYPE IS NOT NULL AND EMPLOYEE_TYPE LIKE '%Standard%'",
+    "customSchema": "EMPLOYEE_TYPE STRING, COLUMN1 STRING, COLUMN2 STRING, COLUMN3 DECIMAL(25,11), PKEY INT"
+}
+
+df = spark.read.jdbc(url=url, table=table, properties=properties)
+
+13.why dataframe is performing better than RDD
+	DF has schema enforced, and catalyst optimizer will apply optmization techniques
+	
+14.what is serialization and deserialization 
+--serialization -->converting objects or data structures into smaller binary formats, for eg, you have wide transformation or cacheing or persist has to happen in that case, data has to be shuffled and to be travelled over the network.
+		In that case, serialization will convert these objects or data structures into smaller binary formats so that performance will be improved
+
+--deserialization -->converting binary formats back to objects.
+**there 3 types of serialization 1.Java serialization --it is default and slow and less efficient
+2.Kryo serialization --much faster
+
+15.what is explain plan
+16.what is shuffling parameter and what is the role of it in performance optmization
+--by default it is 200 but we can customize it depends on need
+
+17.difference between import * and import specific method from library
+18.select vs withColumn
+19.what is impact of UDF in peformance
+--UDF is black box to spark, means it can not apply any operation technique to UDF's
+--context swithc b/w JVM and Python and vise versa
+
+20.Out of many tasks only few tasks are running slow. what could be the reason
+--data skew
+
+21.OOM(out of memory) issue encountered. How to troubleshoot--check for data skew, serialization,collect,enhance executors memmory
+
+22.what is the impact on collect large datasets
+--collect means collecting all the data or results from all the executors. It will create a overhead to driver and it starts performing poorly for other actions.
+
+22.What is dynamic partition pruning(skip)
+--when you want to join partitioned fact table with dim table, and you have some filters in join. 
+in static pruning --even though you have filters in query, it will read all the paritions and then apply the filters
+in dynamic pruning --it will only scan required partitions involved in filter
+
+23.Performance impact of bigdata files
+--Parquet --OLAP
+--Avro--OLTP
+
+24.Snappy vs Gzip
+
+######################################################################################################################################################
+Delta Lake: Spark/Databricks Interview Question
+
+1. Can you compare Datalake, Delta Lake and Datawarehoue
+Datalake:
+semi/un/structured
+Schema on Read side
+No ACID
+system can be at corrupted state
+
+Delta Lake:
+semi/un/structured
+Schema on Read side
+ACID
+system canno be at corrupted state
+
+DWH:
+structured
+Schema on write side
+ACID
+system cannot be at corrupted state
+
+
+2.what are transactional logs in delta lake
+3.How does delta table support ACID properites
+4.What is the use of vacuum command
+5.what is dry run in vacuum command
+6.what is the use of optimize command
+7.How does Z ordering improve the peformance
+8.Can you compare optimize with auto optimize
+9.what is the timetravel and use of it
+10.How to restore the delta table to one of its previuos version
+11.What is the difference between managed table and un managed table
+managed table --metadata and data will be at databricks side
+			--simply dropping will drop both metadata and data
+			--less control for users
+			
+un managed table:metadata will be in databricks and data files will be in exernal storage location
+			--drop command will only drop metadata table
+			--if you want to drop data files, then fire rm command
+			--more control for users and they can apply their own security techniques
+			
+both table supports - ACID
+
+managed:
+python
+df.write.format("delta").saveAsTable("<table_name>")
+
+sql:
+CREATE TABLE <table_name>
+(<column_name> <data_type> <column_constraint>, ...)
+USING DELTA
+
+we can also give path inside our DBFS internally(though it is managed)
+CREATE TABLE <table_name>
+(<column_name> <data_type> <column_constraint>, ...)
+USING DELTA
+LOCATION '<path_to_table_location>'
+
+
+Un managed:
+
+sql
+CREATE TABLE <table_name>
+(<column_name> <data_type> <column_constraint>, ...)
+USING DELTA
+LOCATION '<path_to_table_location>'
+
+12.what is data skipping in delta lake
+--avoiding full table scan --based on stats
+
+13.Medallion architecture in delta lake.
+--bronze-silver-gold
+in bronze, we ideally go with data lake only since it is just a raw data
+in silver, we will performa all sanity checks like cleansing dups, making sure the data types etc and load into silver 
+in gold, we will perform and apply all the business logic and load into gold , gold is business ready data
+
+14.what is schema evolution? difference between OverWrite schema and merge schema?
+15.what is delta table instance and use of it?
+you cannot directly fire DML operations on a Delta table using PySpark. Instead, you need to use a Delta table instance to perform DML operations on a Delta table. Delta table instances provide a programmatic interface for performing operations on Delta tables, such as reading, writing, and updating data
+
+16.what is generated column in delta table?
+CREATE TABLE my_table (
+  id INT,
+  timestamp TIMESTAMP,
+  date DATE GENERATED ALWAYS AS (DATE(timestamp)) VIRTUAL
+)
+USING DELTA
+PARTITIONED BY (date)
+
+--here date column will not be stored physically but it is computed when you query it
+
+17.what is identity column in delta table?
+CREATE TABLE employees (
+  emp_id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 100, INCREMENT BY 1),
+  first_name VARCHAR(50),
+  last_name VARCHAR(50),
+  email VARCHAR(100)
+);
+
+18.How to overwrite only selective records in delta table
+using replaceWhere
+# Selectively overwrite data in the Delta table
+df=spark.read.....
+df.write.format("delta").option("replaceWhere", "date >= '2023-09-01'").mode("overwrite").save("/tmp/delta-table")
+
+19.how to review the history of the delta table?
+using timestamp, or version --timetravel--use history command
+
+20.What is deletion vector in delta lake
+suppose, if we delete only few records from table(in backend it has big parquet files like 1GB one file),it has to recreate the entire parquet file again. And this is expensive. to avoid that, we can enable delta.enableDeletionVectors=True
+so that it will mark deleted records as some flag instead recreating the entire file
+
+21.what is delta clone? and types of clones in delta lake
+Delta clone is a feature in Delta Lake that allows you to create a copy of an existing Delta table at a specific version
+Clones can be either deep or shallow, depending on whether they copy over the data files or just the metadata of the existing table
+
+CREATE TABLE my_table_clone
+CLONE my_table
+
+dml's on cloned table will not impact the base or original table
+
+22.what is delta sharing in delta lake
+Delta Sharing is a useful feature in Delta Lake that allows for secure data sharing across different computing platforms, making it easier to share data with other organizations without copying it to another system.
+
+23.How to drop un managed table?
+
+24.what is delta cache?
+suppose if we are performing any analytics and we are fetching from delta table(remote storage incase of un managed table),
+it will store the result in executor's cache in worker node. if you perform same analyticas, it will fetch from cache and not from remote storage
+
+same as result cache in snowflake
+
+25.What is bloom filter index?
+CREATE BLOOM FILTER INDEX my_table_index
+ON my_table (my_column)
+
+It helps to scan if the data is NOT present in perticular data file or may be present based on our query.
+this way it helps the performance
+
+######################################################################################################################################################
+Pyspark Development: Spark/Databricks Interview Questions
+
+1. what is schema? infer schema vs explict schema
+infer schema --scan entire dataset and define the schema --not recommended
+explict schema --schema we define explicitly
+
+2.what is widgets? how to create inout parameters
+3.HOw to onvert from RDD to dataframe
+df=rdd1.todf()
+
+4.How to create df from bigdata files
+5.what is MSCK command in spark?
+MSCK --Metastore Consistency Check
+The MSCK REPAIR TABLE command is used in Databricks to recover partitions in a table and update the Hive metastore
+The MSCK REPAIR TABLE command is used in Apache Spark (specifically in Spark SQL) to repair or refresh the metadata for tables managed by the Hive metastore. It's a useful command when working with external tables that are located in a data lake or an external storage system like Hadoop HDFS, Amazon S3, or Azure Data Lake Storage. This command is typically used in conjunction with data stored in partitions.
+
+MSCK REPAIR TABLE my_table
+
+6.what is FSCK command in spark?
+FSCK --File System Check
+the FSCK REPAIR TABLE command is used to remove file entries from the transaction log of a Delta table that can no longer be found in the underlying file system
+This can happen when data files or deletion vector files are manually deleted from the file system, causing inconsistencies between the transaction log and the actual data files
+
+FSCK REPAIR TABLE my_table
+
+7.tructType vs StructField
+8.MapTpe vs ArrayTpe
+9.Distinct vs Dropduplicates
+10.how UDF impact performance?
+Pyspark UDF --will be in Python, and it will be executed in Python in backend, rest all the code will be execued in JVM
+hence serialization has to happen, it is costly, UDF is always blackbox, as it cannot apply optmization techniques
+
+11.how to improve UDF performance then?
+we can register the UDF in spark, in this way spark will apply certain optmization techniques
+
+from pyspark.sql.functions import udf
+from pyspark.sql.types import IntegerType
+
+# Define the UDF function
+def square(x):
+    return x * x
+
+# Wrap the UDF function with udf() to create a UserDefinedFunction object
+square_udf = udf(square, IntegerType())
+
+# Register the UserDefinedFunction object with Spark
+spark.udf.register("square", square_udf)
+
+
+12.what is left semi join?
+13.what is left anti join?
+14.spark df to pandas df
+	df.toPandas()
+15.difference between spark and pandas df
+16.How to convert Dataframe columns values into python list
+df.select("country").collect()
+
+16.How to load data from databricks to synapse analytics
+df.write \
+  .format("com.databricks.spark.sqldw") \ ***********IMP
+  .option("url", "jdbc:sqlserver://<your-synapse-server>.database.windows.net:1433") \
+  .option("tempDir", "abfss://<your-container-name>@<your-storage-account-name>.dfs.core.windows.net/<your-directory-name>") \
+  .option("forwardSparkAzureStorageCredentials", "true") \
+  .option("dbTable", "<your-table-name>") \
+  .mode("overwrite") \
+  .save()
+  
+17.what is preaction sql and postaction sql in synapse data loading
+while writing, to synapse like below we can appy pre and post actions, like truncate before loading and recreate index after laoding
+
+these are in options
+df.write \
+  .format("jdbc") \
+  .option("url", "jdbc:postgresql://<your-database-url>") \
+  .option("dbtable", "<your-table-name>") \
+  .option("user", "<your-username>") \
+  .option("password", "<your-password>") \
+  .option("preactions", "CREATE TABLE <your-table-name>_temp AS SELECT * FROM <your-table-name> WHERE 1=0") \
+  .option("postactions", "DROP TABLE <your-table-name>; ALTER TABLE <your-table-name>_temp RENAME TO <your-table-name>") \
+  .mode("overwrite") \
+  .save()
+
+18.how to read/write from relational databases using ADB
+discussed above, like JDBC connector, numpartitions, fetchsize, batchsize etc
+
+19.what is window functions?
+20.How to remove data from cached data out of spark memory?
+using unpersist
+21.How to handle bad records while reading--
+mode --permissive,--allow even bad records
+dropmalform, drop bad records
+failfast--dont allow anything
+
+######################################################################################################################################################
+yspark Development: Spark/Databricks Interview Questions
+
+21.difference between dataframes
+subtract or exceptAll
+22.what is spark submit ?
+23.how to get spar configuration value and how to change it
+	spark.config.set("param",val) --spark.config.get("param")
+24.what are the different options while writing a df
+	format,mode,paritionBy,bucketBy,header
+25.how to read only csf files ---*.csv
+26.how get first and last records from df
+	df.head(10)
+	df.tail(5)
+27.no columns in sf-->len(df.columns)
+28.list down columns along with data types --df.printSchema()
+29.what describe command and summary command in spark
+describe() function on a DataFrame to get basic statistics like count, mean, standard deviation, min, and max for each numeric column:
+df.describe().show()
+
+summary() to get more customized summary statistics.
+df.summary().show()
+
+28.show vs display
+show --20 records
+display --1k records
+
+look will be different
+display provides a richer interactive experience for exploring and analyzing data. It supports features like sorting, filtering
+
+29.How to run notebook from another notebook
+dbutils.notebook.run("a/b/notebook2")
+30.How to convert json data to structured format
+using explode
+df_exp=df.select("id",explode("fruits").alias("fruit")
+
+31.how to handle null values --fillna etc
+32.find no of partitions in df
+33.how to find no of recrods in each partition
+		groupBy("partitionId").count
+34.How to aggregate values from a column into a list whithin each group
+	collect_list
+	collect_set
+	
+35.difference between scala and pyspark
+	scala --native to spark--high performance
+	pyspaek -in python-easy to learn
+
+36.spark SQL vs Pyspark
+	spark SQL --sql developers
+	pyspark--python developers
+	
+	spark sql is one of module in pyspark
+	speed wise both same
+37.what is mountpoint
+38.how to protect passwords in databricks
+39.different types of clusters
+40.what is spot instance and use of it?
+	spare VM--may not be avaiable immediately
+	for critical applications go with reserved instances
+	
+41.what is DBFS--mainly for temop data--mainly load in external storage
+42.sort merge join
+43.magic command
+
+######################################################################################################################################################
+
+	
+
+
+	
+	

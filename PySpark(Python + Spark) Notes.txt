@@ -1,0 +1,956 @@
+Spark Notes:
+
+how to check spark version:
+v_spark_version = spark.version
+print(v_spark_version)
+
+default behaviour of spark:
+one or more executors allowed per one worked node
+one executor will have at max 5 cores
+
+now you can assume AT A TIME, one core per one partition or task
+
+like wise we usally build, 5 patitions per core for better utilization and performance.
+
+1.Spark architecture(how it works internally) --driver node,worker node,DAG,stage,task,cluster manager
+		when user submit the application, it will be submitted to driver node as a job
+		driver further split the job into multiple stages(stage1, stage2 etc)
+		and stage will further divided into tasks, and task will execute the code based on partition. means one task per one partition per one core
+		it means, tasks can be executed parallely but stages will have the dependency
+		once all tasks completed, then stage will be marked as complete
+		once stage1 completes then only stage2 will pick since it has the dependency at data level
+2.Spark API's(RDD,Dataframe,Dataset) and their differences
+	RDD and DataFrame are same wrt, immutability,resilient(fault tolerance ),in-memory, distributed
+	differences - RDD does not have schema where dataframe contains schema like relational table in DB
+	Since there is no schema concept in RDD, optimization can not be applied, it applies only to DataFrame and datasets
+3.what are the transformations? --map,filter,aggregator,sorter,union etc
+4.what are the actions? --collect(),write,save,first,foreach,min,max,count etc
+5.what is narrow transformation? --no data suffling is required--like filter,union
+6.what is wide transformation?--data suffling is required--like group by
+7.what is on-heap memory?what is off-heap memory? which is faster?
+	--on-heap --inside executors,managed by JVM--recommended for small/medium size datasets--faster than off-heap
+	--off-heap --outside executors,managed by OS--recommended for large scale datasets --little slow but faster than disk
+	--disadvangages --on-heap ->Garbage collectors will take some time to cleanup old/unused objects inside executors when it is full
+					--off-heap ->take time for I/O
+8.What is cluster? --computing infrastructure--3 types, all purpose(interactive cluster--for notebooks development),job(for jobs/workflows),
+					pools--all purpose cluster will take some time for reboot everytime--to avoid this, we go for pool cluster
+					in pool cluster, some nodes are always up and runnnig as per configuration
+9.Types of modes in cluster --single node(only 1 driver node and NO worker nodes--less work loads)--cost cutting
+							--multi node(many to many--heave work loads)
+
+--------------------------
+10.Read csv file in spark
+	inferSchema is not recommended --Reason below:
+	Extra Pass Over Data: When reading a CSV file with inferSchema enabled, Spark performs two passes over the data. In the first pass, it reads the data to determine the schema and data types of each column. In the second pass, it reads the data again to create the DataFrame based on the inferred schema. This additional pass can result in increased data reading time.
+
+Hence, always go with schema creation using Struct Type and attach to df while creating
+
+check Spark Reader - Read CSV file notebook
+
+11.Handling error records - in 3 ways- while reading from file
+		Permissive --allow bad records in separate column
+		DROPMALFORMED - will drop bad records
+		FAILFAST - throw exception immediately
+		
+		.option("mode","any of the above")
+		--Check notebook for more details
+		
+12. To connect any database can it be On prem or SQL DB, we need to create JDBC connector(syntax)
+13. To connect any external storages(ADLS, S3 etc) need to create a mount point using dbutils
+14. Instead hard coding any sensitive information, we can leverage Azure keyvault concept. First need to create Azure keyvault service in Azure and create secrets in it and access it from Databricks notebook
+
+		accessing keyvault from databricks:
+		first we need to create a secret scope using worskapce link and add secrets/createScope at the end.
+		enter secret name,DNS(url of Azure KV), RsourceID
+		Once secret is created, we can retreive it using dbutils.secret.get(scope=<scope name>, key=<secret name in KV>)
+		  eg: password=dbutils.secret.get(scope=<scope name>, key=<secret name in KV>)
+		  
+################################### Performance Tuning Concepts #######################################################################
+		  
+15.By default, when you read a file or from database(INSTEAD OF READING WE CAN CALL IT WRITING INTO MEMORY), 
+Spark will partition the data with 128 MB of each partition.
+		spark.conf.get("spark.sql.files.maxPartitionBytes") --134217728b i.e 128MB
+		
+		by default, spark will create paritions when you write into memory(generally creating the df out of a file)		
+		so default number of paritions is bases on file size. that is mutliple for 128MB.
+		df.rdd.getNumPartitions()
+		
+		**to see the data inside each paritions --df.rdd.glom().collect()
+		But, default partition size can be changed. eg: spark.conf.set("spark.sql.files.maxPartitionBytes",2000) --changed to 2kb per partition
+		
+		sc.defaultParallelism --to check default no of parallelism --sc means spark context		
+		**defaultParallelism == no of cores in a worker node
+		
+		number of partitions can be changed always using repartition or COALSCE
+				
+16.repartition --means, it will create the paritions evenly. It requires data shuffling b/w partitions
+		df.repartition(10,country_id) --create 10 partitions based on countryid
+		
+		num=df.distinct(countryid).count
+		df.repartition(num,"countryid)
+		**here number of partitions is mandetory hence calculating it. it all depends on req.
+		
+	COALSCE - will not shuffle the data but only REDUCE the number of paritions
+	
+	reparition can increase or decrease the no of paritions where as COALSCE will only decrease the no of partitions
+	
+36. IMP - count number of records in each partition.
+	for eg, I am reding a file and creating a df(means writing into memory). now spark will create some default partitions based its file size(each one 128MB)
+	
+	lets say we have file with 10MB - in that case, it will create only 1 parition by default.
+	Now lets change the number of partitions using df.repartition(5) and check how many records are segregated in each partition.
+	
+	df.repartition(5)
+	
+	from pyspark.sql.functions import spark_partition_id*****
+	df2=df1.withColumn("paritionId",spark_partition_id())  in our case spark_partition_id would be 0,1,2,3,4 (5 partitions)
+	
+	df2=df1.withColumn("paritionId",spark_partition_id()).groupBy("paritionId").count()
+	display(df2)
+	
+			
+28.Interview Question - Shuffle Partition
+	shuffle is required when you perform wide transformation like Agg,  joins where data is interdependent btwn the partitions.
+	by default, shuffle partition parameter are set as 200.
+	spark.conf.get("spark.sql.shuffle.partitions")
+	
+	we can also change it to our need - spark.conf.set("spark.sql.shuffle.partitions",<number>)
+	IMP it is always good practice to maintain the partitions with size of 128MB to 200MB. and number of partitions are multiply of no of cores
+	
+partitionBy and bucketBy are used while writing only:	
+17.partitionBy(year,month) method is used to create directory-based partitions--create separate folder(year/month)
+		
+		We can also resrict the number records per file. for eg.
+		
+		df.write.format("csv").option("header",True).option("MaxRecordsPerFile",1000).partitionBy("Year").mode("overwrite").save("a/c/b")
+	
+18.bucketBy(5,year,month).sort(product_name) --create 5 partitions based on hash value of bucketing value and sort it inside bucket.
+
+	it will be useful when you perform join/agg, spark will understand the bucketing and it will significantly improve the performance.
+	when you join any dataset, it will perform sort merge join automatically behind the scene. SMJ nothing but shuffling and sorting the data which are very 2 costly operations.
+	And, whenever you call the action related these kind of wide transformation, it will perform SMJ everytime which is expensive.
+	
+	To avoid this, we can apply bucketing and keep the data shuffled and sorted ready.
+
+	In partitionBy, it will create as many number of partitions(folders) as we select the partitioned column(usually low cardinality column such as country, department etc) means even if you have one record for that perticular partition it will create a separate folder for that.
+	
+	But in bucketBy it will created fixed number of partitions based on hash value of your mentioned column data.
+	
+19.Cache vs Persist
+	Cache --will store results from transformation in memeory
+	persist --it will store result in memory or disk
+	
+	we may get qn like, spark is already in memory computation, then why do we need cache and persist?
+	use of cache, suppose some transformation of any df is repeatedly being called, then we can cache it instead calculating the logic again and again
+	eg. df.cache()
+
+	persist() :- Below are the params for persist()
+	MEMORY_ONLY - stores the result only in memory. If size of the result is more than memory, only partial data will be cached and rest all would be re calculated
+	MEMORY_ONLY_SER - same as above but serialized
+	MEMORY_AND_DISK - stores partitions in disk those do not fit in memory
+	MEMORY_AND_DISK_SER - same as above but serialized
+	DISK_ONLY - Stores result in disk only.
+	
+	** if we put _2 like MEMORY_ONLY_2, it will create a replica so that we would not lose data if any of the node is failed
+	**When the application completes successfully, Spark will automatically clean up the cached data, freeing up the resources
+	
+	NOTE:Here df.cache() and df.persist(MEMORY_ONLY)  are same.
+	
+30.Dataframe Checkpoint - Checkpoint is to store the intermediate result of any df into disk.
+	for eg, if we have 10 df's and 6th and 7th df's are depending on df5, when you call df7 or df6 for any action,it will compute df1-df5 everytime
+	to avoid that, we can do checkpoint on df5.
+		like this -df1->df2->df3->df4->df5->df6
+		like this -df1->df2->df3->df4->df5->df7
+		like this -df1->df2->df3->df4->df5->df8
+	
+	It looks similar to cache but main difference is, in checkpoint it will truncate the DAG where as cache wont.
+	****And, cache will store the result in memory where as checkpoint will always store in disk
+		eg.# Enable checkpointing and specify the checkpoint directory
+			spark.sparkContext.setCheckpointDir("hdfs:///user/checkpoint_dir")
+			
+			df.squared_rdd.checkpoint()
+			
+			since we are storing result in any reliable storage like HDFS, fault tolerance is guaranteed.
+	
+20. see point 22 - Catalyst Optimizer--in spark 2.0, in later versions lile spark 3.x onwards, they introduced Adaptive Query Execution
+
+21.Broadcast variable: you may get question--what is BROADCAST JOIN? belwo is the answer.
+	in normal scenarios - when you submit the application, driver node will further partition it and send them across to all the worker nodes and it also furher create the stages and tasks. Task actually process the data at ground level.
+	But, when you perform some joins b/t a huge table like fact table and small table like dimension table, data will be shuffled always btwn the nodes or workers which is costly operation. --THIS IS ALSO CALLED SHUFFLE JOIN
+		to avoid this, we can make use of broadcast variable, to send complete copy of small table(in our case it is dimension table) to each worker node anfd it will perform join with fact table locally without data shuffling.BUT make sure your broadcast table should be smaller than your driver memory.
+	
+	syntax to make any dataframe as broadcast variable - broadcast(df), lets take our example, join fact table with dimension
+	df1=[] --fact data
+	df2=[] --dim data
+			
+		from pyspark.sql.functions import broadcast
+		df3=df1.join(broadcast(df2),df1.id=df2=id,inner) --here you will not see join operation in DAG
+		df3.explain(True) --to get the execution plan of any df --here True will give both physical and logical plan,without True only physical plan
+		
+		NOTE : If any dataset is less than 10MB, it would be apply broadcast join automatically
+
+22.Adaptive Query Execution:
+	without AQE, means catalyst Optimizer--below is the execution flow:
+	
+{front end}	{Optimizer.....................................................................}					{Back end............................}
+SQL API
+DataFrame   -->Unresolved Logical Plan-->Logical Plan-->Optimized logical plan-->Physical plan **{cost model}**-> selected Physical plan-->execute RDD
+Dataset 	
+
+-->Unresolved Logical Plan = Checking syntax of code and semantics(checking if tables are avaialable if you are writing sql query)
+-->Logical Plan = check for data types, Applying rule based(framing the query like from,where, group by etc) or cost based db engine
+-->Optimized logical plan = find the most optimized plan for executing your code --if you have filter1 in stage 1 that would eliminate 10%data and filter2 in stage2 that eliminates 70% data, then it will apply stage 2 filter first to avoid carrry forward the unnecessary data.
+-->physical plan = actual plan applicable for your code(can be n number of physical plans)
+
+selected Physical Plan - out of n number of physical plans, it will choose the best and then apply to RDD.
+	
+Here once physical plan is selected, it will be applied to all stages in that job no matter what.
+
+But, But, when AQE came into picture, it will re assess the execution plan right after completion of each stage and its output data.
+By default, AQE will apply some optimization techniques such as broadcast join, COALSCE etc.
+
+And also, if we have 5 paritions, and out of 5 , 3 are small and 2 are big. in normal scenarios spark will allocate them to execute them individually
+and 2 big partitions will take time and rest 3 will complete soon and cores will go idle which is not good for performance.
+So AQE, will merge smaller partitions and get them exected it in one core , means we are reducing the partitions, this concept is alos called
+COALSCE partitionining
+
+To enable the AQE - spark.conf.set("spark.sql.adaptive.enabled",True)
+
+SHUFFLE join is not good as it is costly. ----AQE comes handy
+Broadcast join is fine but has limitations like only small dataset/dataframe can be broadcasted-----AQE comes handy
+Data Skew -- un evenly distributed data, ie bad partitioning--means, suppose if you have sales data, and for this sales data, 80% comng from one country and rest all 20% coming from other 10 countries, we do partitioning based on country then 80% data will go into one executor which is bad
+
+In this case AQE- automatically detects data skew.
+
+27.How to handle data skewness(un evenly distributed data)
+	1. enable AQE  --see above
+	
+	IMP:from version 3.x above, Enabling AQE, will take care of salting,broadcast joining and skew hint automatically
+	
+	2. use broadcast join --see above	
+	3.salting--splitting the big partition into further smaller partitions and name them with psuedo columns.
+	4.skew hint --
+		df = spark.sql("SELECT * FROM mytable WHERE id > 100 SKEWED BY id")--here we are telling spark that df is skewed based on id, so that wll apply optimization techniques automatically.
+
+29. Autoscaling - min - max worker nodes
+
+68.Pyspark | Performance Optimization: Delta Cache
+	As we know, when we create delta table with path, it would create the table/files in specific location, can be DBFS,HDFS or Azure ADLS or S3.
+	suppose, If I am doing some analytics, in that case whenever I query this delta table, it will always read from above remote location.And it will create the latency and hit the performance.
+	
+	To overcome this, we can cache the table into local disk of node(every worker node has RAM memeory and disk as well incase of, dataset is not going to fit in memeory there will be spill over) and whenever you query table it will actually fetch from delta cache instead remote location.
+	
+	by default, delta cache would be disable, to check - spark.conf.get("spark.databricks.io.cache.enabled")
+	
+	enable delta cache - spark.conf.set("spark.databricks.io.cache.enabled",True)
+	
+	cache select * from delta_table_name
+
+######################################################################################################################################################
+==>Identify and filter out the records based on null values.
+23.isNull and isNotNull
+	df2=df1.filter(df1.emp_name.isNull())
+	df3=df1.filter(df1.emp_name.isNotNull())
+	
+	if you want to add one or more conditions -
+		df4=df1.filter((df1.emp_name.isNotNull()) & (df1.salary>3000 --& for and , | for or
+		**you need to maintain () between conditions else it will throw an error.
+	
+	
+24.Identify and drop records having nulls(null can be in any of the column)--parameter is important here.
+	
+	syntax:df.dropna(parameter) --parameter can be -"any" --it will drop the records if it is having null in any of the column
+											       -"all" --it will drop the record if is having nulls in all columns
+											   [subset=col1,col2..] --it will drop the record if it is having nulls in mentioned columns
+											   df5=df1.dropna(subset=["emp_name","salary"]) --drop only if these 2 columsn are null
+											   here default is any
+25.Identify nulls and fill with some values
+	syntax: df.fillna(value='some value')  --we give value=any number, it will replace only numbered columns.
+										--if we give string value(value="somethig"), it will replace only string columns
+										NOTE that it will replace whole dataframe
+										
+								if you want to fill in certain columns only, then use below syntax			
+			df.fillna(value='some value',subset=["col1","col2"..])
+
+
+26.UDF -user defined Function
+		eg.
+		
+		defining the funtion -
+		
+		def fun_name():
+			some operation
+			return val
+	Here UDF are backbox for spark, means spark will not apply any performance optimization techniques for UDF written in python or scala
+	because, spark will execte the code in JVM(java machine)
+	and, UDF are mainly to build custom logic, hence spark treat UDF as one unit of computation without knowledge of its complete behaviour
+	
+	While UDFs may not be as optimized as built-in Spark operations, they provide flexibility to perform a wide range of transformations and computations on your data. It's important to carefully design and use UDFs to balance flexibility and performance in your Spark applications
+	
+31.Compression Methods: Snappy vs Gzip --these are the widely used compression methods in bigdata projects.
+	when you save files, the default compression type is snappy
+	
+								Snappy 								vs 										Gzip
+						low CPU utilization															high CPU utilization
+						low compression rate														high compression rate
+						i.e converts 1GB to some 500MB												i.e converts 1GB to some 200MB
+						splittable																	non splittable
+						Use case - Hot layer														Use case - cold layer
+						Use case - Compute Intensive												Use case - Storage(archive) Intensive
+						
+						
+df.write \
+  .format("parquet") \																				
+  .option("compression","snappy") \  ##"gzip"
+  .save("FileStore/spark/test/compressionFiles")
+  
+######################################################################################################################################################
+32. PySpark Functions
+
+	split: split("string to be splitted","on what basis t split space,-,; etc".getItem(0 or 1 etc)
+	0--first splitted values, 1 second splitted value --so on
+	
+	df=df.withColumn("first name",split("name","-").getItem(0))
+	df=df.withColumn("last name",split("name","-").getItem(1))
+	
+33. Arrays_zip
+	to map elements avaialable in different arrays.
+	
+	("ABC Inc.", [101, 102, 103], ["HR", "Finance"]
+	
+	from pyspark.sql.functions import arrays_zip,explode
+df_zipped=df.withColumn("zipped_array",arrays_zip("Employee IDs","Department Names"))
+	
+	o/p-
+[{"Employee_IDs": 101, "Department_Names": "HR"}, {"Employee_IDs": 102, "Department_Names": "Finance"}, {"Employee_IDs": 103, "Department_Names": null}]
+
+Once mapped, we can flatten it using explode
+	
+34.Array_Intersect
+	get you common elements from 2 arrays without duplicates
+	
+	intersect("array1","array2")
+	
+	df=df.withColumn("intersect",intersect("array1","array2"))
+	
+	array_union--union arrays removing duplicates
+	array_except --print from array1 that are not avaialable in array2
+	array_distinct --print distinct values from array1
+	array_min --print min value in from array
+	array_max --prnt max value in array
+	array_sort --sort the array --default asc
+	 to desc ---> .desc()
+
+35. Concat --to concatenate multiplecolumns/strings into one string(no delimeter)--Concat("a","b") =>ab
+	Concat_ws --same as Concat but with delimeter --Concat_ws(",","a","b") =>a,b/t
+	array_join - to concatenate the elements in a array - array_join(["a","b","c","d"],",") =>a,b,c,d
+	
+36.Pyspark | Null Count of Each Column in Dataframe
+	from pyspark.sql.functions import col,count,when
+
+	cols=df1.columns  #['emp_id', 'emp_name', 'salary', 'location']
+
+	df=df1.select([count(when(col(c).isNull(),c)).alias(c) for c in cols])
+
+	display(df)
+
+37. Pyspark: Find Top or Bottom N Rows per Group
+	Almost same as window functions in SQL
+	
+38. while reading a file, when you dont mention anythin about schema --then only 1 spark job is created to get the no of columns
+						  when you infer schema --2 jobs(1 for get the no of columns, 1 for their data types)
+						  when you create schema explicitly and attach it --then no sparks job created
+	
+39. Greatest and Least --Greatest - max of row level
+						Least --min of row level
+						**these 2 give result in row level
+						df_greatest=greatest("Math","English","Science","History","Geography")
+						df_least=least("Math","English","Science","History","Geography")						
+
+	Max and Min			Max -max of column level
+						Min - Min of column level
+						**these two in agg level
+						df_maths_max=df.agg({"Math" : "max","English" : "min"})
+
+						
+######################################################################################################################################################
+DELTA LAKE:
+						
+40. DWH - can support only structured data --DML is easy
+			But can not support scaling up/down and cannot support semi structured or un structured data
+to overcome above challenges, introduced datalake --it supports all types of data(structured,semi structured,un structured)
+	but at the same time, it has created new challenges like 
+		it wont support any dml operations since data will be stored in raws format, so identifying any record and performing DML is very costly
+		If we are doing some insert operation in datalake, if system failes it will leave the data in corrupted state
+		it wont support ACID properties
+	
+So here comes the delta lake --combination of best features from datawarehouse and best features from datalake in addition to time travel.
+	and it also support streaming data.
+	
+	So delta lake nothing but a storage layer sitting on top of datalake. So datalake contains all the raw data related to bigdata in csv,parquet and json formats. And, delta lake holds all the metadata information (like column name, types,lengths, other stats) so that we can perform DML easily.
+	
+	DELTA lake is highliy scalable,reliable(doesn't leave the data corrupted) and securable.
+	
+	
+41.DELTA LAKE Internal mechanism:
+	When you create a table in delta lake, it will actually store metadata information in json log file level and  actual data will be stored in storage layer in parquet format (path will be provided)
+	for every dml operation(insert,update,delete,merge), it will create a log file in the form of JSON and for every 10 log files it will create a checkpoint file in the form of Parquet file.
+	
+	In delta log folder, alongside json, it will also create .crc(cyclic reduntancy check) typically only a few bytes in size. The checksum is calculated using the CRC32 algorithm. 
+	
+	The .crc file is used by Delta Lake to ensure that the data in the transaction log is not corrupted. If the .crc file does not match the .json file, then the data in the .json file is considered to be corrupted and will not be read by Delta Lake. 
+	
+	The .crc file is also used by Delta Lake to optimize queries. The checksums can be used to quickly determine which files in the transaction log need to be read in order to satisfy a query. This can significantly improve the performance of queries on large Delta Lake tables.
+	
+	Checkpoint file will be useful when we do time travel, means spark doesn't necessarly need to scan all the files rather it can check checkpoint file.
+	
+	The default retention period of any data file(when we perform delete operation) is 7 days(it can be changed according to our need) means when you delete some data, data file will not be deleteted immediately rather it will do soft delete.means it will mark the record as delete in json log file. It means we can do time travel 7 days by default.
+	
+	***even after 7 days, files will NOT be deleted physically and will not be visible for time travel.
+	
+	but we can change it to desired number - 
+	spark.sql(
+  """
+    SET delta.deletedFileRetentionDuration = "30 days"
+  """
+)
+	
+	Note: if we are increasing the retention time period, it will occuly more storage
+	
+	**while creating the delta table, we usually give the path where to store parquet data files to have more controls
+	Incase, if we dont specify the path , it will create the data files and delta log files in default location(dbfs:/user/hive/warehouse/delta_employee_without_location)
+	
+	For every DML operation on delta table it also maintain the versionining
+	
+42. Managed table:
+	databricks will manage both metadata and data files for you, this is the recommended approach in order to achieve time travel,ACID and security features of delta lake
+	
+	Un managed table:
+	if you would like databricks to manage only metadata and you want to store your data files in someothe location(like S3 or GCP storage).
+	in this way end user has more control on the data. However in this case also time travel,ACID possible
+	
+43. Data Lake Solution Architecture:
+	source -->RAW(data lake) -->Curated(data lake)--------------------------------->Presentation/serving layer(data lake)
+								basic transaction like cleansing nulls,				aggregated data/ready to use
+								remove duplicates etc
+	
+	**here all three layers are in datalake, in data lake architecture, we can not achieve any DMLs or ACID
+	**-->means any ETL tool like ADF, ADB, AWS Glue, GCP data flow etc.
+	
+	to over come this -
+
+44. Delta Lake Solution Architecture:
+	source -->Bronze(data lake) -->Silver(delta lake)--------------------------------->Gold/serving layer(delta lake)
+								basic transaction like cleansing nulls,				aggregated data/ready to use
+								remove duplicates etc
+	**here Bronze layer is in datalake since it is just to maintain the history data.And this approach recommended by databricks
+
+45. standard/mostly used ways to create delta table		
+			
+		Usin Pyspark method
+			from delta.tables import  *
+		1.DeltaTable.create(spark) \  ---createIfNotExists --createOrReplace
+			.tableName("tab_name") \
+			.addColumn("emp_id","INT") \
+			.
+			.property("some descritpion") \
+			.location("some path")
+			.execute()
+		
+		2.SQL method:		--IF NOT EXISTS --create or replace
+		
+			create table emp(
+				emp id int,
+				.
+				.
+				)using DELTA
+				location("some path")
+		3. from DF
+			spark.write.format("delta").option("path","some location").saveAsTable("tab name")
+			
+46.Pyspark| Delta Lake: Delta Table Instance
+	for example, if we have to perform any dml operation usin pyspark(not spark SQL) then we can create a instance/replica of delta table and we can do DML operation on that instance. it is like working on cloned table. It will still reflect the base table.
+	
+	syntax 1:instanc1=DeltaTable.forPath(spark,"path to delta table")
+			 instanc2=DeltaTable.forName(spark,"delta table name")
+			 
+			 after creating instance you can fire DML operations using pyspark on that instance
+			 
+			 it is like taking snapshots of detla table at any given point. This will be helpful for time travel and data recovery.
+			 
+47.Different Approaches to Insert Data Into Delta Table
+	SQL style insert:
+	%sql
+	insert into ...
+	
+	usinf df:
+	df1.write.insertInto("tab_name",overwrite=False)
+	
+	spark SQL:
+	spark.sql("insert into ..")
+
+48. Different Approaches to Delete Data from Delta Table
+	
+	SQL method:
+	
+	%sql
+	delete from emp where ..
+	
+	using delta location:
+	delete from delta.location..  mot commonly used
+	
+	spark sql:
+	spark.sql("delete from ..")
+	
+49.Delta Lake : Update Delta Table
+	same as delete
+
+50. SCD Type -1 using merge statement --check notebook
+
+51. to maintain the audit on delta table
+	--first get the history of delta table by creating a instance on that delta table
+	
+	from delta.tables import *
+	df_instance=DeltaTable.forName(spark,"delta_emp")
+	lastOp=df_instance.history(1)
+	
+	you can explod perticular metric column and insert data into audit table
+	we can also have other audit columns like user name, notebook name, timestamp etc 
+	
+	check the notebook for more details
+
+52.Delta Lake : Slowly Changing Dimension (SCD Type2)
+	refer notebook
+	
+53.Time travel(back and forth) on delta table
+	make use of timestamp as of and version as of
+	
+	in SQL --select * from tab timestamp as of <sometime> --you can get timestamp from describe history tab
+	in pyspark --df=spark.read.option("timestampAsOf","sometime").table("tab")
+	
+	in sql - select * from tab version as of <version number> --you can get version from describe history tab
+	in pyspark --df=spark.read.option("versioAsOf","version number").table("tab")
+
+54. Pyspark| Delta Lake: Restore Command
+	once we do the time travel and if we decided to restore to any previous version then use restoreToVersion/restoreToTimestamp
+	
+55. Pyspark | Delta Lake: Optimize Command - File Compaction
+	As we know, whenever we perform any dml operation on delta table, it will always create new file and it will keep on increasing these files as we proceed with several dmls.
+	at some point, it will be overhead for spark to maintain the metadata of all these files
+	that's where optimize comes into picture.
+	
+	usually optimize command combines smaller files into 1gb size file. It does not mean it will remove the files, but going forward it will refer the latest optimized(combined) file instead of all files.
+	
+56.Pyspark | Delta Lake: Vacuum Command
+
+	I am inserting 4 records and it has created 4 data parquet files 
+	if I delete record -1 then that perticular file be made as invalid(It will NOT be deleted physically)**No new file will be created in this case
+	If I update record -2 then that perticular file be made as invalid(It will NOT be deleted physically) and will create 2 new files.
+	if I insert new record, new file will be created
+	
+	
+	After some point I also ran optimize command that is optimize delta_tab_name(it will combine all smaller files in large file of <=1GB), POINT to note, when we optimize the delta table, it will create new optimized file(delta wll refer this file only going forward) and make all related smaller files as invalid.
+	
+	In this way also , invalid files keep increasing
+	
+	Like wise , if we keep doing/performing DML operations, it will keep building invalid files
+	and at some point we will have to clean them to save storage and cost and also reduce the over head of maintaning metadata
+	
+	
+	To do this, we have Vacuum command. this command will only remove invalid files(retention days we have to mention).
+	BUT BUT , always perform dry run before running actual vacuum
+	
+	VACUUM delta_tab_name DRY RUN
+		It will list down the invalid files are ready for deletion
+		
+		--delete files older than certain days(need to give hours in command)
+		VACUUM delta_tab_name RETAIN 720 HOURS DRY RUN
+	
+		--delete all invalid files from now
+		VACUUM delta_tab_name RETAIN 0 HOURS DRY RUN --it will through error --mechanism given by dataricks
+		
+		BUT to allow this kind of deletion, you can make retentionduration check as false usinf below command
+		set spark.databricks.delta.retentionDurationCheck.enabled = False
+		Now VACUUM delta_tab_name RETAIN 0 HOURS DRY RUN will work
+		
+		
+		
+		so VACUUM delta_tab_name fianlly invalid files that are invalidated older than 7 days by default
+		
+		
+57.Pyspark | Delta: Z-Order Command
+	z order is the extension to optimize. as we know when you optimize, it will combine smaller files into one file(~1GB file) and make all these smaller files as inactive. 
+	for eg, you have 100s of smaller files and it optimized all of them into some 10 files. And all these 10 files are not in sorted order.
+	Now, when you perform some analytical activities like filter, agg or join, we may end up with scanning unnecessary files out of these 10 which will hamper the performance
+	
+	here comes z order comes into picture. When you perform optimize alongside z order , it will sort the data and create optimized files.
+	this way, when you do analytics , it will only scan required files.
+	
+	%sql
+optimize delta_emp_type2 zorder by (emp_id)
+	
+58.Pypark | Delta: Schema Evolution - MergeSchema
+in many big data projects, schema from source file/data may change over a period of time.
+	eg, are delta table is created based on initial schema like(id,name,salary) and after few months we started receiving one more additional column called dept.
+	And, when we try to write data into our delta table, it will fail due to schema mismatch. To handle this scenario schema evolution comes into picture.add option("SchemaMerge",True) while writing into delta table and it will create the newly coming column automatically in delta table.
+	
+	Here note that, it will fill as null for for this new column for old records.
+	
+	**And, when some column is removed at source file end, then also schem merger will handle it BUT BUT it will not drop the this perticular column from delta table. Instead it will keep addition as null to this deleted column.
+	
+	Pypark | Delta: Schema Evolution - OverwriteSchema
+		It will drop or rename the column from delta table according to source system.
+	
+59. Ways to insert the data into delta table:
+	1.df.write.InsertInto("table_name",overwrite=False)
+	
+	2.df.write.mode("append").saveAsTable("tabname")
+	
+	3. create view and insert into table--insert into tab select * from view
+
+60.Pyspark | Data Skewness| Interview Question: SPARK_PARTITION_ID
+	when we read external file, spark will do the partitioning by default like filesize/128MB,
+	
+	if you would like to know about each partition's id, we can use spark inbuilt function called SPARK_PARTITION_ID.
+	
+	eg. df.withColumn("part_id",SPARK_PARTITION_ID())
+	
+61.Pyspark| Input_File_Name: Identify Input File Name of Corrupt
+	from pyspark.sql.functions import input_file_name
+	
+	df.withColumn("src_file_name",input_file_name()) --will give you input file name against each record
+	
+62.Pyspark | Window Functions: Lead and Lag
+	to get lead and lag of record partitioned by any column ---just like in SQL
+
+63. check file/folder exist or not in dbfs
+
+64.Pyspark | Interview Question: Sort-Merge Join (SMJ)
+	sort merge join is the internal mechanism, when you perform any kind of jion(inner,left,right,full) SMJ will trigger automatically behind the scene
+	
+	once partition is done with source data.
+	flow is --shuffle the data b.w executors(spark will decide the suffle looking at df's) -->sort -->merge it.
+	
+65.explain plan
+		df.explainPlan() --will give you the execution plan how it is executing behid the scene.
+		by default it will give you physical plan
+		if you need to know all plans like unresolved logical,logical and physical-then pass one parameter called "extended"
+		if you need to know the plans in well formatted human readable--then pass "format"
+		
+66. Pyspark:Interview Question|Scenario Based|Max Over () Get Max value of Duplicate Data
+	1.get max price and max discount using winodw function --partionBy(id)
+			newcol1=max(price).over(partionBy(id))
+			newcol2=max(discount).over(partionBy(id))
+
+67.Pyspark | Create_map(): Convert Dataframe Columns to Dictionary (Map Type)
+
+69.Create Azure keyvault and create secrets and also values
+	create secret scope in databricks-> put #secrets/CreateSecrete in url
+	give DNS name and resuource ID in databricks --to communicate with azure keyvault
+	**to retreive secrets, dbutils.secrets.listScopes()
+	
+70.Widgets can be created in databricks, to avoid hard coding any values like, table name,schema,db name etc.
+	dbutils.setwidgets.text(""widget_name","") --"" for default value
+	We can pass above required parameters from ADF
+
+71.in vise versa, we can also pass the values(o/p values back to caller like ADF) using dbutils.notebook.exit("value")
+	in ADF - activity to run ADB notebook -> set variable
+											in set variable-->@activity('activity name').output.runOutput
+
+72.**ADF storage event trigger -->when ever there is new file arrived in ADLS, it will activate the pipeline and trigger the adb notebook
+	***in notebook, to pick only the latest file, you can sort the file list in desc and pick only the latest file [0]
+	
+*******inteview qn	
+73.Read Excel File with Multiple Sheets
+	df=spark.read.format("com.crealytics.spark.excel").option("inferschema",True).option("header",True).option("dataAddress","sheet2!").load("path/to/file")
+	here we need to install com.crealytics.spark.excel from maven at cluster level
+	
+	**here is the tricky part. above code can read only one sheet from excel at a time. but what if we want to read from all sheets
+	to do that, we can write UDF
+	
+	sheet=['sheet1','sheet2','sheet3']  ##we can also take the sheets dynamically if we dont how many sheets will be there in excel
+	path=a/b/c/
+	
+	def excelDF(path,sheets):
+		firstSheet=sheets[0]
+		df=spark.read.format("com.crealytics.spark.excel").option("inferschema",True).option("header",True).option("dataAddress",{firstSheet}!).load(path)
+		
+		for sheet in sheets[1:] ##starting from second sheet
+			sheetDF=spark.read.format("com.crealytics.spark.excel").option("inferschema",True).option("header",True).option("dataAddress",{firstSheet}!).load(path)
+			
+			df=df.union(sheetDF)
+			return df
+			
+74.Handlining Duplicate Data: DropDuplicates vs Distinct
+
+75. distinct vs dropDuplciates()
+	both are same unless we give any columns as parameters ti dropDuplciates to delete duplicates only based on certain columns
+	
+	df.distinct() --delete duplicates based on all columns
+	df.dropDuplicates() --delete duplicates based on all columns
+	df.dropDuplicates("id") --will delete duplicates based on id column -->print all columns
+	
+	work around for distinct to delete bases on certain columns-->
+		df.select("id","name").distinct() --but it will print only id and name
+
+76.Performance Optimization: Select vs WithColumn
+	df.withColumn(col1,operation)-->will create new column and new df --performance impact
+	
+	so better go with select, eg: df.select("*",concat(col("firstname")),lit(" "),col("lastname")).alias("full name")
+	
+	both produce same result but select wins the race in terms of performance
+	
+77.StructType and StructField are used to define a schema for dataframe
+	
+	eg. df_sch=StructType([
+		StructField("id",IntegerType(),nullable=True),
+		StructField("name",StringType(),nullable=True)
+	])
+	
+	**we can also nested the any field like below:
+	df_sch=StructType([
+		StructField("id",IntegerType(),nullable=True),
+		StructField("name",
+			StructType([
+			StructField("firstName",StringType(),nullable=True),
+			StructField("middleName",StringType(),nullable=True),
+			StructField("lastName",StringType(),nullable=True)
+		]))
+	])
+
+**here the drawback is, all fields/StructField should have the data, if not it will throuw an error.
+		eg, if we are not passing middleName for any record, then it will through an error while creating df
+		you will have to fill None/null at least
+		
+		to overcome this, we can go with map()
+
+78.Schema Definition: Struct Type vs Map Type		
+	
+		df_sch=StructType([
+		StructField("id",IntegerType(),nullable=True),
+		StructField("name",
+			MapType(StringType(),StringType(),True)
+			)
+	])
+	
+	data should be provided in json format --{"firstName":"a","middleName":"b","lastName":"c"} --here any of these can be null
+												{"firstName":"x","lastName":"z"} --it will not throw error.
+
+
+79.**if your requirement is, if any of the column is expecting array type values, then you can go with ArrayTpe()
+			eg.StructField("Hobbies",ArrayTpe(StringType()) -->it will expect list of values
+
+
+80. Schema Comparison b/w df's
+	if df1.schema == df2.schema
+		print("schema matches for both df's")
+	else:
+		print("schema does not matches for both df's")
+	
+	**if schema does not matches, I want to know what all are the columns missing or extra in each df
+		lsit1=list(set(df1.columns) - set(df2.columns))
+		
+
+	
+81.to encrypt data or any column -->we use encrypt function but prior to this, we need to install fernet library
+		from cryptography.fernet import fernet
+		key=fernet.generate_key()
+		f=fernet(key)
+		
+		data="abc"
+		enc_data=f.encrypt(data)
+		
+82.Interview Question: Pyspark VS Pandas
+	
+		Pyspark																			Pandas
+		open source Python lib ,written in Scala									open source python lib, written in Pythan
+		mainly for big data analytics and distributed data processing				does not support distributed data processing, runs on single node
+		df's are immutable															df's are mutable
+		support parallel processing													does not support parallel processing
+		Lazy evaluation																Eagarly evaluation
+		
+83.array_repeat("col_name",10) --it will create  list of data 10 times of col_name, later we can explode it	
+		this will be used to create test data
+		
+		df.withColumn("new_col",array_repeat("id",100))
+		
+		explode("new_col")
+		
+		
+84. subtract and exceptAll -->I want to read data from df A, records that are not avaialable in df B
+		difference b/w subtract and exceptAll is, subtract will NOT keep duplicates where as exceptAll keep them
+		
+		df1.subtract(df2)
+		df1.exceptAll(df2)
+
+85. LAST and FIRST window fucntions
+	LAST --last record data from partition or window
+	FIRST --first record data from partition or window
+	
+	just like lead and lag
+	
+86.	skip first N records from a file
+	use .option("skipRows",10) --it will ski first 10 rows and create df
+
+87.But how to skip certain range?? eg:skip rows from 10 to 20
+	fulldf=full read
+	df1= spark.read.option("skipRows",10).load(path) -->will give you all from 10 records
+	df2=fulldf.subtract(df1) -->first 10 records
+	df3=spark.read.option("skipRows",20).load(path)--gives you all records from 20
+	
+	now union df2 and df3
+	
+88.from spark 3.4 onwards, we can directly query the dataframe. Earlier we used to create a view/TempView/table then used to query it
+	res=spark.sql("select * from {df_tab}",df_tab=df)
+
+******
+89.Performance Optimization: Re-order Columns in Delta Table
+	why reordering of columns is very important in delta lake. Ideally when you create any delta table and start loading data into it, it will create data file in format of parquet and statistics in json format. But it will only capture first 32 columns of delta table in json file and it will apply optimization and data skipping techniques based on these 32 cols.
+	
+	Suppose, we have more 32 columns liks some 100, and most of the columns that are being using in data analytics are after 32, in that case it will hamper the performance
+	
+	In this scenario, we need to re order the columns and keep most used columns in first 32.
+	
+	eg: ALTER TABLE emp CHANGE COLUMN COL35 FIRST --will re order col35 to first place
+	ALTER TABLE emp CHANGE COLUMN COL35 AFTER COL10 --will put col35 after col10
+	
+	now, if you open log file(json file) , you will see aboe column col35 in the statistics. This way we ca re arrange the columns
+	**It will insert the data in proper place only when we load some more records after altering it since we will load based on schema.
+	
+90. Types of cloning in databricks
+	Deep clone -- will copy the data physically and time consuming, mostly used for backing up the tables
+	shallow clone -- only metadata will be copied and no physical data
+
+91. types of views:
+	normal view - persisted across databricks
+				-can be dropped manually
+	temp view - for session only (notebook level,when you install python library, when you restart cluster)
+			-will be dropped when session ends
+	Global temp view - at cluster level.
+			-will be dropped when cluster restarts
+
+92. We can directly read data from files
+	select * from file_format."path"
+	eg. select * from json.`a/bc/file1.json`
+	
+93. To parse the json data:
+# Sample JSON data
+		json_data = [
+			('{"name": "John", "age": 30}'),
+			('{"name": "Alice", "age": 25}')
+		]
+
+		# Create a DataFrame with JSON column
+		df = spark.createDataFrame(json_data, ["json_column"])
+
+		# Define the JSON schema
+		json_schema = StructType([
+			StructField("name", StringType(), True),
+			StructField("age", IntegerType(), True)
+		])
+
+		# Parse the JSON column using the schema and extract fields
+		parsed_df = df.select(from_json(col("json_column"), json_schema).alias("data")).select("data.*")
+
+		# Show the results
+		parsed_df.show()
+		
+94. The explode function in PySpark is used to split an array or map column into multiple rows, thereby "exploding" the column. Here's an example
+		 Sample data with an array column
+		data = [
+			(1, ["apple", "orange"]),
+			(2, ["banana", "grape"])
+		]
+
+		# Create a DataFrame
+		df = spark.createDataFrame(data, ["id", "fruits"])
+
+		# Explode the array column into separate rows
+		exploded_df = df.select("id", explode("fruits").alias("fruit"))
+
+		# Show the results
+		exploded_df.show()
+		
+95. Structed streaming:
+	read:
+		streamDF=spark.readStream \
+					  .table("")
+		
+	write:
+		streamDF.writeStream \
+			.trigger(ProcessingTime = "5 minutes") \
+			.outputMode("append") \
+			.option("checkpointLocation" = "/path")
+			.option("table name")
+			
+			**here trigger(ProcessingTime = "5 minutes") --to check the source df for every 5 min, if we dont specify any time interval it will scan source df for every 30sec.
+			
+			**trigger(once = True) --load all avaialable data for one time and then ***stop***
+			**trigger(AvailableNow = True) --load all avaialable data in micro batches and then ***stop***
+			
+			**outputMode("append") --append newly coming records
+			**outputMode("complete") --overwrite the target table every time
+			
+			**.option("checkpointLocation" = "/path") --to track the progress
+			**it will gurantee the data is loaded exactly once and also guaranteed the fault tolerance
+			
+	**short coming of streaming data frames
+		- sorting is not possible
+		- deduplication is not possible
+		
+96. Auto loader is designed based on above spark stream concept
+		read:
+		streamDF=spark.readStream \
+					  .format("CloudFiles") \
+					  .option("CloudFiles.format","csv") \
+					  .load("file path")
+		
+	write:
+		streamDF.writeStream \
+			.trigger(ProcessingTime = "5 minutes") \
+			.outputMode("append") \
+			.option("checkpointLocation" = "/path")
+			.option("table name")
+			
+97. We can also use COPY INTO command in SQL eg. copy into table_name from "file path"
+
+	but when to use copy into and when to use auto loader
+		copy into											auto loader
+		thousands of files									millions of files
+		less efficient at scale								more efficient at scale
+		
+98. multihop architecture or medallion architecture
+	S3-bronze-silver-gold
+	
+	S3-bronze:
+				read:
+		streamDF=spark.readStream \
+					  .format("CloudFiles") \
+					  .option("CloudFiles.format","csv") \
+					  .load("file path")
+
+			write:
+		streamDF.writeStream \
+			.trigger(ProcessingTime = "5 minutes") \
+			.outputMode("append") \
+			.option("checkpointLocation" = "/path")
+			.option("table name")		
+			
+
+	bronze-silver(cleansing, type casting or other new columns such as input_file_name)		
+	spark.readStream \
+		.table("bronze table") \
+		.createOrReplace Temp View("view name")
+		
+	silver to gold:
+		
+		create a temp view(something_temp_v) using some aggregations on silver view(count(books) etc)
+		
+		and write into gold layer using above temp v
+		spark.table("something_temp_v") \
+			.writeStream \
+			.outputMode("append") \
+			.option("checkpointLocation" = "/path")
+			.option("table name")
+		
+99.

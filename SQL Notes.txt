@@ -1,0 +1,357 @@
+MUST Do SQL Topics For FAANG 2022🔥 BEGINNER + ADVANCE Level | Data Engineer
+All important commands -DDL,DML,DCL
+Integraty constraints
+Primary key/Foreign key
+where clause --logical operators,conditional operators,like,between,is null,is not null
+Joins --inner,left,right,full,conditional operators in join conditional
+Case -when statement
+Group by --simple aggregation functions,Group_concat,Applying aggregation function over case and when
+Regex
+Date functions
+working with nulls
+substring functions
+coalesce function
+lookups/sub query --In,not in, any/all,exists/not exists
+with clause
+union,unio all,intersection
+window functions--Over clause,Row number,Rank,dense_rank,sum,count,min,max,avg,stddev
+				  Lag,Lead,First_value,last_value,Nth_value,Ntile
+				  Row between frame clause
+				  Range between frame clause
+
+Pivot Tables
+			
+	
+-----------------------------------------------------------------------------------------------------------------------------------------------
+Order of execution:
+
+Join or From
+Where --row filter
+Group by
+Having
+Select
+order by or limit
+----------------------------
+DB Details:
+DB Name:db_demo
+Server Name:sqlserver12341.database.windows.net
+User Name:dbuser
+Password:Amarsingh@1234
+https://www.c-sharpcorner.com/UploadFile/f0b2ed/pivot-and-unpovit-in-sql-server/
+
+------------------------------------------
+All important commands -DDL,DML,DCL
+
+create table tab_name(col1 datatype(length),
+					  col2 datatype(length))
+Alter table tab_name add col_name varchar(20)--add new column
+alter table tab_name drop column col_name; --drop column
+
+SQL to get the schema details:
+SELECT * FROM information_schema.columns where TABLE_NAME='Address'
+
+	
+DCL:
+Grant previliges to user on table
+eg:
+GRANT SELECT, UPDATE ON MY_TABLE TO SOME_USER, ANOTHER_USER;
+ 
+and revoke
+
+TCL:
+Tansaction conrol language: Revoke, commit
+
+---------------------
+count(*) --gives you count including 
+count(1) also same as above --here can give any number, **it is not related to column position
+****infact count(*) is faster than count(1) if you check the execution plan.
+
+count(col_name) --it will exclude nulls and give you the count
+---------------------------------
+
+Joins:
+Join/Inner join/Eque Join --only common records from both tables based on join condition.
+
+Natural jon --it selects only unique columns from both tables, whereas inner join returns all selected columns from both tables
+
+left outer join --all the records from left table and matching values from right table. If not matched from right table, NULL will be populated
+
+right outer join--all the records from right table and matching values from left table. If not matched from left table, NULL will be populated
+
+full outer join--all records from both tables
+
+cross join -- for each record from left table, it will join with all records from righ table.
+means records from left table * records from right table
+
+self join--join the table with itself ensuring alias names.
+
+Null safe join:
+if you want to join the tables where nulls are expected in join condition columns,
+then replace null with temp values like below and join.
+select * from emp,dept where coalesce (emp.dept_id,9999)=coalesce(dept.dept_id,9999)
+
+-----------------------------------------------------------------------------------------
+Case:
+select emp_id,emp_name,salary,dept_id,
+case when emp_name='Ram' then 'Ram Kumar'
+	 when emp_name='Sam' then 'Sam Kumar'
+	 when emp_name='Jake' then 'Jake Kumar'
+else emp_name end as  full_name
+from emp
+--------------------------------------------------------------------------------------
+
+Case with aggregate functions:
+select dept_name,count(
+case when dept_id<300 then dept_id end
+) as no_of_Depts from dept group by dept_name;
+
+**it will do group by for all but display the count based on case statement.
+
+difference between having case in aggregate function and having where clause is, where clause will discard the records which are not meeting the
+condition and perform aggregation.
+whereas in aggregate with case, it will do group by for all and display aggregate result based on case statement.
+
+------------------------------------------------------------------------------------------
+
+
+Group_concat or STRING_AGG --
+to get values from different rows to same row sepatated by delimeter based on group like below
+SQL:
+select dept_id,STRING_AGG(location,',' ) as locatons from dept group by dept_id;
+REsult:
+dept_id  Locations
+100	CHN,BGLR,BGLR,HYD
+200	PUNE
+300	CHEN,BGLR,HYD,BGLR,HYD
+400	KOL
+500	PUNE
+600	BGLR,BGLR,BGLR,HYD
+700	KOCHIN
+---------------------------------------------------------------------------------------------
+SQL Qn:
+tab1					tab2
+1						1
+1						1
+1
+
+ouput for all 3 joins:
+1	1
+1	1
+1	1
+1	1
+1	1
+1	1
+
+***simply tab1*tab2 because it is MATCH ON ALL
+---------------------------------------------------------
+
+Date functions:
+select GETDATE();--for current timestamp
+
+datepart():
+Select datepart(day, getdate()) as currentdate; --to get the day from above timestamp.
+**we can replace day with year,month,hour,second,millisecond,microsecond,nanosecond based on requirement.
+
+dateadd(): --
+Select dateadd(day, 10, getdate()) as dt
+**we can replace day with year,month,hour,second,millisecond,microsecond,nanosecond based on requirement.
+if you want to go in the past, put -
+
+DATEDIFF():
+Select datediff(day, 2015-11-16, 2015-11-11) as diff;
+**we can replace day with year,month,hour,second,millisecond,microsecond,nanosecond based on requirement.
+
+CONVERT():
+SELECT CONVERT(VARCHAR(10),GETDATE(),10) 
+syntax:DATEADD(datepart, number, datecolumnname)
+
+--------------------------------------------------------------
+Substring: --same as substr() in informatica
+SELECT SUBSTRING('SQL Tutorial', 1, 2) AS ExtractString;
+
+-------------------------------------------------------------
+Duplicate:
+
+delete from emp where rowid not in(select max(rowid) from emp group by empid having count(*)>1);
+-------------------------------------------------------------
+
+sub query/lookup:
+simple sub query--will execute independently--no dependency on outer query
+correlated sub query --A correlated subquery is a subquery that uses the values of the outer query. 
+In other words, the correlated subquery depends on the outer query for its values.
+
+correlated sub query: will be executed repeatedly.
+SELECT
+    Name,
+    ListPrice,
+    ProductCategoryID
+FROM
+    SalesLT.Product p1
+WHERE
+    ListPrice IN (
+        SELECT
+            MAX (p2.ListPrice)
+        FROM
+            SalesLT.Product p2
+        WHERE
+            p2.ProductCategoryID = p1.ProductCategoryID
+        GROUP BY
+            p2.ProductCategoryID
+    )
+ORDER BY
+    ProductCategoryID,
+    Name;
+	
+	**The above example finds the products whose list price is equal to the highest list price of the products within the same category:
+In this example, for each product evaluated by the outer query, the subquery finds the highest price of all products in its category.
+
+If the price of the current product is equal to the highest price of all products in its category, the product is included 
+in the result set. This process continues for the next product and so on.
+
+As you can see, the correlated subquery is executed once for each product evaluated by the outer query.
+
+--------------------------------------------------------------
+logical operator IN and NOT IN
+in , not in ---insert/update/delete with in or not in
+***only one expression is allowed in select list.
+select * from emp_ind where id in(select id from emp_us);
+select * from emp_ind where id not in(select id from emp_us);
+**it also useful while inserting.updating/deleting
+**in can be used when there are mulitple 'or' conditions
+-----------------------------------------------------------
+logical operators ANY,All
+
+ANY: subquery returns true if it has at least one record matching for its condition.
+eg:
+SELECT ProductName FROM Products
+WHERE ProductID = ANY
+  (SELECT ProductID
+  FROM OrderDetails
+  WHERE Quantity > 99);
+  --Here if OrderDetails table contains at least one record with Quantity>99, then sub query will return true and outer query will be executed.
+  
+ALL:
+whole sub query table should satisfy the condition. 
+eg:
+SELECT ProductName FROM Products
+WHERE ProductID = ANY
+  (SELECT ProductID
+  FROM OrderDetails
+  WHERE Quantity > 1000);
+  --here OrderDetails tables should contain all the records as Quantity>1000
+---------------------------------------------
+logical operator exists and not exists:
+Exists:
+The EXISTS operator is a logical operator that allows you to check whether a subquery returns any row. 
+The EXISTS operator returns TRUE if the subquery returns one or more rows.
+**********
+The EXISTS operator is used to test for the existence of any record in a subquery.
+The EXISTS operator returns TRUE if the subquery returns one or more records. It also returns true if subquery is returning NULL.
+Since NULL is existed always
+**********
+Syntax:EXISTS ( subquery)
+
+Not exists:
+NOT EXISTS ( subquery)
+
+---------------------------------------------------------
+The key differences between IN & EXISTS Operator are :
+1.	IN can be used as a replacement for multiple OR operators.	 
+	To determine if any values are returned or not, we use EXISTS. 
+2.	IN works faster than the EXISTS Operator when If the sub-query result is small.	 
+	If the sub-query result is larger, then EXISTS works faster than the IN Operator.
+3.	In the IN-condition SQL Engine compares all the values in the IN Clause.	
+	Once true is evaluated in the EXISTS condition then the SQL Engine will stop the process of further matching.
+4.	To check against only a single column, IN operator can be used.	
+	For checking against more than one single column, you can use the EXISTS Operator.
+5.	The IN operator cannot compare anything with NULL values.	
+	The EXISTS clause can compare everything with NULLs.
+6.	A direct set of values can be given for comparison.	
+	Cannot compare directly the values, sub-query needs to be given.
+-----------------------------------------------------------------------
+
+With Clause: just like a variable , can be reused many times.
+it is like view, we will calculate some result and and copy it into with clause. And we can reuse this result as many time as we want.
+eg:
+with orders(avg_tax) as				--here you can have more than one columns also but make sure to assign values from sub query.
+(
+select avg(TaxAmt) from SalesLT.SalesOrderHeader
+)
+select * from SalesLT.SalesOrderHeader,orders where TaxAmt>orders.avg_tax;
+**Here we are creating with clause with name orders(like view) and giving a column(avg_tax) with 'as' we will store the result 
+from inner query that is avg amount and store it in avg_tax.
+This can be joined later just like any other join.
+
+---------------------------------------------------------------------------
+window functions--Over clause,Row number,Rank,dense_rank,sum,count,min,max,avg,stddev
+				  Lag,Lead,First_value,last_value,Nth_value,Ntile
+				  Row between frame clause
+				  Range between frame clause
+				  
+Over clause:
+There must be over clause for any window functions.
+
+ROW_NUMBER()
+select *,ROW_NUMBER() over(order by ListPrice) as rn from SalesLT.Product; --this gives you the row number based on ListPrice
+
+RANK():
+select ProductID,Name,ListPrice,Color,RANK() over(order by ListPrice) as rnk from SalesLT.Product; 
+--gives you the rank based on ListPrice.It will skip the order if there are same ListPrice for more than one record by giving same rank for repeated values
+
+DENSE_RANK():
+same as RANK() but it will not skip the sequence.
+select ProductID,Name,ListPrice,Color,DENSE_RANK() over(order by ListPrice) as rnk from SalesLT.Product; 
+
+--min,max,count,avg,sum without partitioning:
+
+partitioning: like grouping 
+select ProductID,Name,ListPrice,Color,ROW_NUMBER() over(partition by Color order by ListPrice) as rnk from SalesLT.Product; 
+--gives you the row numbers based on partition and their order.
+
+select ProductID,Name,ListPrice,Color,RANK() over(partition by Color order by ListPrice) as rnk from SalesLT.Product; 
+--gives you the rank based on partition and their order. And, again rank will be same for same ListPrice values and it will skip the sequence for next
+
+select ProductID,Name,ListPrice,Color,DENSE_RANK() over(partition by Color order by ListPrice) as rnk from SalesLT.Product; 
+--gives you the rank based on partition and their order. And, again dense rank will be same for same ListPrice values and 
+it will NOT skip the sequence for next
+
+******************ALl above functions includes NULL****************
+
+Nth min:
+select * from (
+select ProductID,Name,ListPrice,Color,DENSE_RANK() over(partition by Color ORDER BY ListPrice) as rnk from SalesLT.Product
+) as xx where xx.rnk=2
+
+
+Nth max:
+--Nth max List Price
+select * from (
+select ProductID,Name,ListPrice,Color,DENSE_RANK() over(partition by Color ORDER BY ListPrice DESC) as rnk from SalesLT.Product
+) as xx where xx.rnk=2
+----------------------------------------------------------------------
+Lag,Lead,First_value,last_value,Nth_value,Ntile
+
+Pivot tables: de normaliznig
+select Student,[Geography],[Mathematics],[Science] from
+(select Student,[Subject],Marks from Grades) as tab1
+PIVOT
+(max(Marks)
+for [Subject] in(Geography,Mathematics,Science)
+) as tab2
+
+Un pivot:
+create table unp(
+student varchar(10),
+Geography int,
+Maths int,
+Science int)
+
+insert into unp values
+('Amilee',100,	90,	90),
+('Jacob',90,	100,	95)
+
+select student,marks,subject from
+(select student,[Geography],[Maths],[Science] from unp)as tab
+UNPIVOT
+(subject for marks in([Geography],[Maths],[Science])
+)as tab2
