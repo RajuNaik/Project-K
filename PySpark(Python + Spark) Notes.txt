@@ -1,8 +1,6 @@
-Spark Notes:
-
 how to check spark version:
 v_spark_version = spark.version
-print(v_spark_version)
+print(v_spark_version) --I worked on 3.1.2
 
 default behaviour of spark:
 one or more executors allowed per one worked node
@@ -10,8 +8,12 @@ one executor will have at max 5 cores
 
 now you can assume AT A TIME, one core per one partition or task
 
-like wise we usally build, 5 patitions per core for better utilization and performance.
+like wise we usually build, 5 partitions per core for better utilization and performance.
+======================================================================================================================================================
+1.How many executors will you assign for 10GB file in HDFS?
+2.How many cores are needed for each executor and what amount of memory required for each executor?
 
+======================================================================================================================================================
 1.Spark architecture(how it works internally) --driver node,worker node,DAG,stage,task,cluster manager
 		when user submit the application, it will be submitted to driver node as a job
 		driver further split the job into multiple stages(stage1, stage2 etc)
@@ -19,6 +21,7 @@ like wise we usally build, 5 patitions per core for better utilization and perfo
 		it means, tasks can be executed parallely but stages will have the dependency
 		once all tasks completed, then stage will be marked as complete
 		once stage1 completes then only stage2 will pick since it has the dependency at data level
+======================================================================================================================================================
 2.Spark API's(RDD,Dataframe,Dataset) and their differences
 	RDD and DataFrame are same wrt, immutability,resilient(fault tolerance ),in-memory, distributed
 	differences - RDD does not have schema where dataframe contains schema like relational table in DB
@@ -26,19 +29,25 @@ like wise we usally build, 5 patitions per core for better utilization and perfo
 3.what are the transformations? --map,filter,aggregator,sorter,union etc
 4.what are the actions? --collect(),write,save,first,foreach,min,max,count etc
 5.what is narrow transformation? --no data suffling is required--like filter,union
-6.what is wide transformation?--data suffling is required--like group by
+6.what is wide transformation?--data suffling is required--like group by and joins
+======================================================================================================================================================
 7.what is on-heap memory?what is off-heap memory? which is faster?
 	--on-heap --inside executors,managed by JVM--recommended for small/medium size datasets--faster than off-heap
 	--off-heap --outside executors,managed by OS--recommended for large scale datasets --little slow but faster than disk
 	--disadvangages --on-heap ->Garbage collectors will take some time to cleanup old/unused objects inside executors when it is full
 					--off-heap ->take time for I/O
-8.What is cluster? --computing infrastructure--3 types, all purpose(interactive cluster--for notebooks development),job(for jobs/workflows),
+					
+	By default, off-heap is disabled. to enable it, conf spark.memory.offHeap.enabled=true
+	you can also, decide the size of your own like - --conf spark.memory.offHeap.size=1g
+======================================================================================================================================================8.What is cluster? --computing infrastructure--3 types, all purpose(interactive cluster--for notebooks development),job(for jobs/workflows/production),
 					pools--all purpose cluster will take some time for reboot everytime--to avoid this, we go for pool cluster
 					in pool cluster, some nodes are always up and runnnig as per configuration
+					
 9.Types of modes in cluster --single node(only 1 driver node and NO worker nodes--less work loads)--cost cutting
-							--multi node(many to many--heave work loads)
+							--multi node(many to many--heavy work loads)
 
---------------------------
+
+======================================================================================================================================================
 10.Read csv file in spark
 	inferSchema is not recommended --Reason below:
 	Extra Pass Over Data: When reading a CSV file with inferSchema enabled, Spark performs two passes over the data. In the first pass, it reads the data to determine the schema and data types of each column. In the second pass, it reads the data again to create the DataFrame based on the inferred schema. This additional pass can result in increased data reading time.
@@ -46,7 +55,7 @@ like wise we usally build, 5 patitions per core for better utilization and perfo
 Hence, always go with schema creation using Struct Type and attach to df while creating
 
 check Spark Reader - Read CSV file notebook
-
+======================================================================================================================================================
 11.Handling error records - in 3 ways- while reading from file
 		Permissive --allow bad records in separate column
 		DROPMALFORMED - will drop bad records
@@ -54,25 +63,75 @@ check Spark Reader - Read CSV file notebook
 		
 		.option("mode","any of the above")
 		--Check notebook for more details
-		
+======================================================================================================================================================
 12. To connect any database can it be On prem or SQL DB, we need to create JDBC connector(syntax)
+eg:
+// Define JDBC connection properties
+val jdbcUrl = "jdbc:sqlserver://your-server:1433;databaseName=your-database"
+val jdbcProperties = new java.util.Properties()
+jdbcProperties.setProperty("user", "your-username")
+jdbcProperties.setProperty("password", "your-password")
+
+// Define the SQL query
+val query = "SELECT * FROM your_table"
+
+// Load data from SQL Server into a DataFrame
+val jdbcDF: DataFrame = spark.read.jdbc(jdbcUrl, query, jdbcProperties)
+======================================================================================================================================================
+Connect Snowflake from databricks and load data:
+options = {
+  "sfUrl":"https://pr12345.east-us-2.azure.snowflakecomputing.com",
+  "sfUser":"snowflake_user_name",
+  "sfPassword": "xxxxxx",
+  "sfDatabase": "something_db",
+  "sfSchema": "sch_something",
+  "sfWarehouse": "wh_something"
+}
+
+# Create SparkSession
+spark = SparkSession.builder \
+    .appName("Snowflake Example") \
+    .config("spark.jars", "dbfs:/FileStore/jars/b7b979bb_cf60_4739_afc0_418e3d30fbe9-snowflake_jdbc_3_9_2_javadoc-30e86.jar") \ --jar file should be downloaded and placed in this location
+    .getOrCreate()
+
+# Read data from DataFrame and write to Snowflake
+df.write \
+    .format("snowflake") \ --IMP
+    .options(**snowflake_options) \
+    .option("dbtable", "sch.tab_name") \
+    .mode("overwrite") \
+    .save()
+======================================================================================================================================================
 13. To connect any external storages(ADLS, S3 etc) need to create a mount point using dbutils
+	eg:
+	ACCESS_KEY=df.select('Access key ID').take(1)[0]['Access key ID']    --assuming we stored secret key & access key in a file and accesing using df
+	SECRET_KEY=df.select('Secret access key').take(1)[0]['Secret access key']
+	
+	import urllib
+	ENCODED_SECRET_KEY=urllib.parse.quote(string=SECRET_KEY,safe="")
+	
+	AWS_S3_BUCKET_NAME='naikss3bucket-2'
+	MOUNT_NAME='/mnt/mount_aws_s3/'
+	SOURCE_URL="s3a://%s:%s@%s" %(ACCESS_KEY,ENCODED_SECRET_KEY,AWS_S3_BUCKET_NAME)
+	
+	dbutils.fs.mount(SOURCE_URL,MOUNT_NAME)
+======================================================================================================================================================	
 14. Instead hard coding any sensitive information, we can leverage Azure keyvault concept. First need to create Azure keyvault service in Azure and create secrets in it and access it from Databricks notebook
 
 		accessing keyvault from databricks:
 		first we need to create a secret scope using worskapce link and add secrets/createScope at the end.
-		enter secret name,DNS(url of Azure KV), RsourceID
+		enter secret name,DNS(url of Azure KV), ResourceID
 		Once secret is created, we can retreive it using dbutils.secret.get(scope=<scope name>, key=<secret name in KV>)
 		  eg: password=dbutils.secret.get(scope=<scope name>, key=<secret name in KV>)
 		  
-################################### Performance Tuning Concepts #######################################################################
+################################### Performance Tuning Concepts ######################################################################################
 		  
 15.By default, when you read a file or from database(INSTEAD OF READING WE CAN CALL IT WRITING INTO MEMORY), 
 Spark will partition the data with 128 MB of each partition.
 		spark.conf.get("spark.sql.files.maxPartitionBytes") --134217728b i.e 128MB
 		
-		by default, spark will create paritions when you write into memory(generally creating the df out of a file)		
-		so default number of paritions is bases on file size. that is mutliple for 128MB.
+		by default, spark will create partitions when you write into memory(generally creating the df out of a file)		
+		so default number of partitions is bases on file size. that is mutliple for 128MB.
 		df.rdd.getNumPartitions()
 		
 		**to see the data inside each paritions --df.rdd.glom().collect()
@@ -82,48 +141,78 @@ Spark will partition the data with 128 MB of each partition.
 		**defaultParallelism == no of cores in a worker node
 		
 		number of partitions can be changed always using repartition or COALSCE
-				
-16.repartition --means, it will create the paritions evenly. It requires data shuffling b/w partitions
+		
+Decide partition size (block size default is 128MB). Based on that it will create no of files at table.
+
+table size				target file size			approx no of files in table
+10GB					256MB						40
+1TB						256MB						4096
+2.56TB					256MB						10240
+3TB						307MB						12108
+5TB						512MB						17339
+7TB						716MB						20784
+10TB					1GB							24437
+
+======================================================================================================================================================
+16.repartition --means, it will create the partitions evenly. It requires data shuffling b/w partitions
 		df.repartition(10,country_id) --create 10 partitions based on countryid
 		
 		num=df.distinct(countryid).count
 		df.repartition(num,"countryid)
-		**here number of partitions is mandetory hence calculating it. it all depends on req.
+		**here number of partitions is mandatory hence calculating it. it all depends on req.
 		
 	COALSCE - will not shuffle the data but only REDUCE the number of paritions
 	
-	reparition can increase or decrease the no of paritions where as COALSCE will only decrease the no of partitions
-	
+	reparition can increase or decrease the no of paritions where as COALSCE will ONLY decrease the no of partitions
+eg:
+when we reparitioned df with some 10 paritions, and we want to reduce them TO 5--
+coalesced_df = df.coalesce(5)
+
+======================================================================================================================================================
 36. IMP - count number of records in each partition.
-	for eg, I am reding a file and creating a df(means writing into memory). now spark will create some default partitions based its file size(each one 128MB)
+	for eg, I am reading a file and creating a df(means writing into memory). now spark will create some default partitions based on its file size(each one 128MB)
 	
-	lets say we have file with 10MB - in that case, it will create only 1 parition by default.
+	lets say we have file with 10MB - in that case, it will create only 1 partition by default.
 	Now lets change the number of partitions using df.repartition(5) and check how many records are segregated in each partition.
 	
 	df.repartition(5)
 	
 	from pyspark.sql.functions import spark_partition_id*****
-	df2=df1.withColumn("paritionId",spark_partition_id())  in our case spark_partition_id would be 0,1,2,3,4 (5 partitions)
+	df2=df1.withColumn("partitionId",spark_partition_id())  in our case spark_partition_id would be 0,1,2,3,4 (5 partitions)
 	
-	df2=df1.withColumn("paritionId",spark_partition_id()).groupBy("paritionId").count()
+	df2=df1.withColumn("partitionId",spark_partition_id()).groupBy("paritionId").count()
 	display(df2)
 	
-			
+======================================================================================================================================================
 28.Interview Question - Shuffle Partition
 	shuffle is required when you perform wide transformation like Agg,  joins where data is interdependent btwn the partitions.
 	by default, shuffle partition parameter are set as 200.
+	
+	It means that when a shuffle operation is triggered (e.g., during a join or aggregation), Databricks will use 200 partitions by default to organize and distribute the data across the cluster.
+	
 	spark.conf.get("spark.sql.shuffle.partitions")
 	
 	we can also change it to our need - spark.conf.set("spark.sql.shuffle.partitions",<number>)
 	IMP it is always good practice to maintain the partitions with size of 128MB to 200MB. and number of partitions are multiply of no of cores
-	
+======================================================================================================================================================
 partitionBy and bucketBy are used while writing only:	
 17.partitionBy(year,month) method is used to create directory-based partitions--create separate folder(year/month)
 		
-		We can also resrict the number records per file. for eg.
+		We can also restrict the number records per file. for eg.
 		
 		df.write.format("csv").option("header",True).option("MaxRecordsPerFile",1000).partitionBy("Year").mode("overwrite").save("a/c/b")
-	
+		
+Partitioning
+Partitioning dividеs data basеd on thе valuеs of spеcific columns. This allows Spark to еfficiеntly filtеr and procеss data without having to rеad thе еntirе datasеt. It is particularly usеful for quеriеs that involvе filtеring on a particular column or pеrforming aggrеgations basеd on that column.
+
+Example: Considеr a largе datasеt of wеb traffic logs that includеs columns for timеstamp, usеr ID, and pagе URL. You frеquеntly run quеriеs to analyzе traffic pattеrns for spеcific usеrs or pagеs. In this scеnario, partitioning thе data by usеr ID or pagе URL would significantly improvе quеry pеrformancе by allowing Spark to dirеctly accеss thе rеlеvant partitions without having to scan thе еntirе datasеt.
+
+Whеn to Usе Partitioning:
+You frеquеntly filtеr data basеd on a spеcific column.
+You pеrform aggrеgations basеd on thе partitioning column.
+You havе largе datasеts that nееd to bе procеssеd еfficiеntly.
+
+======================================================================================================================================================
 18.bucketBy(5,year,month).sort(product_name) --create 5 partitions based on hash value of bucketing value and sort it inside bucket.
 
 	it will be useful when you perform join/agg, spark will understand the bucketing and it will significantly improve the performance.
@@ -136,6 +225,16 @@ partitionBy and bucketBy are used while writing only:
 	
 	But in bucketBy it will created fixed number of partitions based on hash value of your mentioned column data.
 	
+Buckеting
+Buckеting dividеs data into a fixеd numbеr of buckеts basеd on a hash function appliеd to a spеcific column. This tеchniquе is bеnеficial for opеrations likе joins and co-grouping, whеrе data from multiplе datasеts nееds to bе matchеd basеd on a common column. Buckеting еnsurеs that data with thе samе join kеy is distributеd еvеnly across thе buckеts, rеducing thе amount of data shuffling rеquirеd during procеssing.
+
+Example: You havе two datasеts, onе containing customеr information and thе othеr containing ordеr dеtails. Both datasеts havе a column for customеr ID. You frеquеntly pеrform joins to combinе customеr data with ordеr information. Buckеting both datasеts by customеr ID would significantly improvе join pеrformancе by еnsuring that data with thе samе customеr ID is collocatеd, rеducing thе amount of data shuffling rеquirеd during thе join opеration.
+
+Whеn to Usе Buckеting:
+You frеquеntly join or co-group data from multiplе datasеts.
+Thе join or co-grouping column has high cardinality (many distinct valuеs).
+You want to minimizе data shuffling during joins. 
+======================================================================================================================================================
 19.Cache vs Persist
 	Cache --will store results from transformation in memeory
 	persist --it will store result in memory or disk
@@ -156,6 +255,8 @@ partitionBy and bucketBy are used while writing only:
 	
 	NOTE:Here df.cache() and df.persist(MEMORY_ONLY)  are same.
 	
+	to cleanup data from disk --df.unpersist() --there is no concept called uncache--since cache is automatically cleared by spark
+======================================================================================================================================================
 30.Dataframe Checkpoint - Checkpoint is to store the intermediate result of any df into disk.
 	for eg, if we have 10 df's and 6th and 7th df's are depending on df5, when you call df7 or df6 for any action,it will compute df1-df5 everytime
 	to avoid that, we can do checkpoint on df5.
@@ -171,8 +272,9 @@ partitionBy and bucketBy are used while writing only:
 			df.squared_rdd.checkpoint()
 			
 			since we are storing result in any reliable storage like HDFS, fault tolerance is guaranteed.
-	
+======================================================================================================================================================	
 20. see point 22 - Catalyst Optimizer--in spark 2.0, in later versions lile spark 3.x onwards, they introduced Adaptive Query Execution
+======================================================================================================================================================
 
 21.Broadcast variable: you may get question--what is BROADCAST JOIN? belwo is the answer.
 	in normal scenarios - when you submit the application, driver node will further partition it and send them across to all the worker nodes and it also furher create the stages and tasks. Task actually process the data at ground level.
@@ -188,7 +290,7 @@ partitionBy and bucketBy are used while writing only:
 		df3.explain(True) --to get the execution plan of any df --here True will give both physical and logical plan,without True only physical plan
 		
 		NOTE : If any dataset is less than 10MB, it would be apply broadcast join automatically
-
+======================================================================================================================================================
 22.Adaptive Query Execution:
 	without AQE, means catalyst Optimizer--below is the execution flow:
 	
@@ -209,19 +311,23 @@ Here once physical plan is selected, it will be applied to all stages in that jo
 But, But, when AQE came into picture, it will re assess the execution plan right after completion of each stage and its output data.
 By default, AQE will apply some optimization techniques such as broadcast join, COALSCE etc.
 
+Question - When AQE is already taking care of broadcast join, why do we need to broadcast smaller dimension table explicitly?
+Ans - To have more control on the execution
+
 And also, if we have 5 paritions, and out of 5 , 3 are small and 2 are big. in normal scenarios spark will allocate them to execute them individually
 and 2 big partitions will take time and rest 3 will complete soon and cores will go idle which is not good for performance.
-So AQE, will merge smaller partitions and get them exected it in one core , means we are reducing the partitions, this concept is alos called
+So AQE, will merge smaller partitions and get them exected it in one core , means we are reducing the partitions, this concept is also called
 COALSCE partitionining
 
-To enable the AQE - spark.conf.set("spark.sql.adaptive.enabled",True)
+To enable the AQE - spark.conf.set("spark.sql.adaptive.enabled",True) --However,AQE is enabled by default from Apache Spark 3.2.0
 
 SHUFFLE join is not good as it is costly. ----AQE comes handy
 Broadcast join is fine but has limitations like only small dataset/dataframe can be broadcasted-----AQE comes handy
-Data Skew -- un evenly distributed data, ie bad partitioning--means, suppose if you have sales data, and for this sales data, 80% comng from one country and rest all 20% coming from other 10 countries, we do partitioning based on country then 80% data will go into one executor which is bad
+Data Skew -- un evenly distributed data, i.e bad partitioning--means, suppose if you have sales data, and for this sales data, 80% comng from one country and rest all 20% coming from other 10 countries, we do partitioning based on country then 80% data will go into one executor which is bad
 
 In this case AQE- automatically detects data skew.
 
+======================================================================================================================================================
 27.How to handle data skewness(un evenly distributed data)
 	1. enable AQE  --see above
 	
@@ -231,8 +337,10 @@ In this case AQE- automatically detects data skew.
 	3.salting--splitting the big partition into further smaller partitions and name them with psuedo columns.
 	4.skew hint --
 		df = spark.sql("SELECT * FROM mytable WHERE id > 100 SKEWED BY id")--here we are telling spark that df is skewed based on id, so that wll apply optimization techniques automatically.
-
+		
+======================================================================================================================================================
 29. Autoscaling - min - max worker nodes
+======================================================================================================================================================
 
 68.Pyspark | Performance Optimization: Delta Cache
 	As we know, when we create delta table with path, it would create the table/files in specific location, can be DBFS,HDFS or Azure ADLS or S3.
@@ -240,13 +348,14 @@ In this case AQE- automatically detects data skew.
 	
 	To overcome this, we can cache the table into local disk of node(every worker node has RAM memeory and disk as well incase of, dataset is not going to fit in memeory there will be spill over) and whenever you query table it will actually fetch from delta cache instead remote location.
 	
-	by default, delta cache would be disable, to check - spark.conf.get("spark.databricks.io.cache.enabled")
+	by default, delta cache would be disabled, to check - spark.conf.get("spark.databricks.io.cache.enabled")
 	
 	enable delta cache - spark.conf.set("spark.databricks.io.cache.enabled",True)
 	
-	cache select * from delta_table_name
+	cache select * from delta_table_name --In snowflake it is Result Cache.
 
-######################################################################################################################################################
+################################################### END OF PEFORMANCE OPTIMIZATION ###################################################################
+
 ==>Identify and filter out the records based on null values.
 23.isNull and isNotNull
 	df2=df1.filter(df1.emp_name.isNull())
@@ -256,7 +365,7 @@ In this case AQE- automatically detects data skew.
 		df4=df1.filter((df1.emp_name.isNotNull()) & (df1.salary>3000 --& for and , | for or
 		**you need to maintain () between conditions else it will throw an error.
 	
-	
+======================================================================================================================================================
 24.Identify and drop records having nulls(null can be in any of the column)--parameter is important here.
 	
 	syntax:df.dropna(parameter) --parameter can be -"any" --it will drop the records if it is having null in any of the column
@@ -264,6 +373,7 @@ In this case AQE- automatically detects data skew.
 											   [subset=col1,col2..] --it will drop the record if it is having nulls in mentioned columns
 											   df5=df1.dropna(subset=["emp_name","salary"]) --drop only if these 2 columsn are null
 											   here default is any
+======================================================================================================================================================											   
 25.Identify nulls and fill with some values
 	syntax: df.fillna(value='some value')  --we give value=any number, it will replace only numbered columns.
 										--if we give string value(value="somethig"), it will replace only string columns
@@ -272,7 +382,7 @@ In this case AQE- automatically detects data skew.
 								if you want to fill in certain columns only, then use below syntax			
 			df.fillna(value='some value',subset=["col1","col2"..])
 
-
+======================================================================================================================================================
 26.UDF -user defined Function
 		eg.
 		
@@ -281,12 +391,12 @@ In this case AQE- automatically detects data skew.
 		def fun_name():
 			some operation
 			return val
-	Here UDF are backbox for spark, means spark will not apply any performance optimization techniques for UDF written in python or scala
-	because, spark will execte the code in JVM(java machine)
+	Here UDF are blackbox for spark, means spark will not apply any performance optimization techniques for UDF written in python or scala
+	because, spark will execute the code in JVM(java machine)
 	and, UDF are mainly to build custom logic, hence spark treat UDF as one unit of computation without knowledge of its complete behaviour
 	
 	While UDFs may not be as optimized as built-in Spark operations, they provide flexibility to perform a wide range of transformations and computations on your data. It's important to carefully design and use UDFs to balance flexibility and performance in your Spark applications
-	
+======================================================================================================================================================
 31.Compression Methods: Snappy vs Gzip --these are the widely used compression methods in bigdata projects.
 	when you save files, the default compression type is snappy
 	
@@ -304,7 +414,7 @@ df.write \
   .option("compression","snappy") \  ##"gzip"
   .save("FileStore/spark/test/compressionFiles")
   
-######################################################################################################################################################
+======================================================================================================================================================
 32. PySpark Functions
 
 	split: split("string to be splitted","on what basis t split space,-,; etc".getItem(0 or 1 etc)
@@ -312,7 +422,7 @@ df.write \
 	
 	df=df.withColumn("first name",split("name","-").getItem(0))
 	df=df.withColumn("last name",split("name","-").getItem(1))
-	
+======================================================================================================================================================
 33. Arrays_zip
 	to map elements avaialable in different arrays.
 	
@@ -325,7 +435,8 @@ df_zipped=df.withColumn("zipped_array",arrays_zip("Employee IDs","Department Nam
 [{"Employee_IDs": 101, "Department_Names": "HR"}, {"Employee_IDs": 102, "Department_Names": "Finance"}, {"Employee_IDs": 103, "Department_Names": null}]
 
 Once mapped, we can flatten it using explode
-	
+
+======================================================================================================================================================
 34.Array_Intersect
 	get you common elements from 2 arrays without duplicates
 	
@@ -340,11 +451,12 @@ Once mapped, we can flatten it using explode
 	array_max --prnt max value in array
 	array_sort --sort the array --default asc
 	 to desc ---> .desc()
-
+======================================================================================================================================================
 35. Concat --to concatenate multiplecolumns/strings into one string(no delimeter)--Concat("a","b") =>ab
 	Concat_ws --same as Concat but with delimeter --Concat_ws(",","a","b") =>a,b/t
 	array_join - to concatenate the elements in a array - array_join(["a","b","c","d"],",") =>a,b,c,d
 	
+======================================================================================================================================================
 36.Pyspark | Null Count of Each Column in Dataframe
 	from pyspark.sql.functions import col,count,when
 
@@ -353,14 +465,14 @@ Once mapped, we can flatten it using explode
 	df=df1.select([count(when(col(c).isNull(),c)).alias(c) for c in cols])
 
 	display(df)
-
+======================================================================================================================================================
 37. Pyspark: Find Top or Bottom N Rows per Group
 	Almost same as window functions in SQL
-	
+======================================================================================================================================================	
 38. while reading a file, when you dont mention anythin about schema --then only 1 spark job is created to get the no of columns
 						  when you infer schema --2 jobs(1 for get the no of columns, 1 for their data types)
 						  when you create schema explicitly and attach it --then no sparks job created
-	
+======================================================================================================================================================	
 39. Greatest and Least --Greatest - max of row level
 						Least --min of row level
 						**these 2 give result in row level
@@ -375,6 +487,9 @@ Once mapped, we can flatten it using explode
 						
 ######################################################################################################################################################
 DELTA LAKE:
+
+What is lakehouse?
+In short, a Data Lakehouse is an architecture that enables efficient and secure Artificial Intelligence (AI) and Business Intelligence (BI) directly on vast amounts of data stored in Data Lakes.
 						
 40. DWH - can support only structured data --DML is easy
 			But can not support scaling up/down and cannot support semi structured or un structured data
@@ -384,7 +499,7 @@ to overcome above challenges, introduced datalake --it supports all types of dat
 		If we are doing some insert operation in datalake, if system failes it will leave the data in corrupted state
 		it wont support ACID properties
 	
-So here comes the delta lake --combination of best features from datawarehouse and best features from datalake in addition to time travel.
+So here comes the delta lake --combination of best features/elements from datawarehouse and best features/elements from datalake in addition to time travel.
 	and it also support streaming data.
 	
 	So delta lake nothing but a storage layer sitting on top of datalake. So datalake contains all the raw data related to bigdata in csv,parquet and json formats. And, delta lake holds all the metadata information (like column name, types,lengths, other stats) so that we can perform DML easily.
@@ -423,11 +538,22 @@ So here comes the delta lake --combination of best features from datawarehouse a
 	For every DML operation on delta table it also maintain the versionining
 	
 42. Managed table:
-	databricks will manage both metadata and data files for you, this is the recommended approach in order to achieve time travel,ACID and security features of delta lake
+	databricks will manage both metadata and data files for you, this is the recommended approach in order to achieve time travel,ACID and security features of delta lake.
 	
-	Un managed table:
+	Un managed table or External Table:
 	if you would like databricks to manage only metadata and you want to store your data files in someothe location(like S3 or GCP storage).
-	in this way end user has more control on the data. However in this case also time travel,ACID possible
+	in this way end user has more control on the data. However in this case also time travel,ACID possible.
+	
+Differece between managed and unmanaged tables(also called external table) is location of the files.
+
+-- Replace the placeholders with your actual values
+CREATE TABLE your_external_table
+USING parquet
+OPTIONS (
+  'path' 'abfss://your_storage_account@your_container.dfs.core.windows.net/path/to/parquet',
+  'fs.azure.account.key.your_storage_account.blob.core.windows.net' 'your_storage_account_key'
+);
+
 	
 43. Data Lake Solution Architecture:
 	source -->RAW(data lake) -->Curated(data lake)--------------------------------->Presentation/serving layer(data lake)
@@ -469,7 +595,7 @@ So here comes the delta lake --combination of best features from datawarehouse a
 			spark.write.format("delta").option("path","some location").saveAsTable("tab name")
 			
 46.Pyspark| Delta Lake: Delta Table Instance
-	for example, if we have to perform any dml operation usin pyspark(not spark SQL) then we can create a instance/replica of delta table and we can do DML operation on that instance. it is like working on cloned table. It will still reflect the base table.
+	for example, if we have to perform any dml operation using pyspark(not spark SQL) then we can create a instance/replica of delta table and we can do DML operation on that instance. it is like working on cloned table. It will still reflect the base table.
 	
 	syntax 1:instanc1=DeltaTable.forPath(spark,"path to delta table")
 			 instanc2=DeltaTable.forName(spark,"delta table name")
@@ -520,7 +646,7 @@ So here comes the delta lake --combination of best features from datawarehouse a
 	check the notebook for more details
 
 52.Delta Lake : Slowly Changing Dimension (SCD Type2)
-	refer notebook
+	refer notebook--preferrably merge statement
 	
 53.Time travel(back and forth) on delta table
 	make use of timestamp as of and version as of
@@ -539,7 +665,7 @@ So here comes the delta lake --combination of best features from datawarehouse a
 	at some point, it will be overhead for spark to maintain the metadata of all these files
 	that's where optimize comes into picture.
 	
-	usually optimize command combines smaller files into 1gb size file. It does not mean it will remove the files, but going forward it will refer the latest optimized(combined) file instead of all files.
+	usually optimize command combines smaller files into 1GB size file. It does not mean it will remove the files, but going forward it will refer the latest optimized(combined) file instead of all files.
 	
 56.Pyspark | Delta Lake: Vacuum Command
 
@@ -549,7 +675,7 @@ So here comes the delta lake --combination of best features from datawarehouse a
 	if I insert new record, new file will be created
 	
 	
-	After some point I also ran optimize command that is optimize delta_tab_name(it will combine all smaller files in large file of <=1GB), POINT to note, when we optimize the delta table, it will create new optimized file(delta wll refer this file only going forward) and make all related smaller files as invalid.
+	After some point I also ran optimize command that is optimize delta_tab_name(it will combine all smaller files in large file of <=1GB), POINT to note, when we optimize the delta table, it will create new optimized file(delta will refer this file only going forward) and make all related smaller files as invalid.
 	
 	In this way also , invalid files keep increasing
 	
@@ -576,7 +702,7 @@ So here comes the delta lake --combination of best features from datawarehouse a
 		
 		
 		so VACUUM delta_tab_name fianlly invalid files that are invalidated older than 7 days by default
-		
+		***after vacuum, we can not do time travel
 		
 57.Pyspark | Delta: Z-Order Command
 	z order is the extension to optimize. as we know when you optimize, it will combine smaller files into one file(~1GB file) and make all these smaller files as inactive. 
@@ -626,7 +752,7 @@ in many big data projects, schema from source file/data may change over a period
 63. check file/folder exist or not in dbfs
 
 64.Pyspark | Interview Question: Sort-Merge Join (SMJ)
-	sort merge join is the internal mechanism, when you perform any kind of jion(inner,left,right,full) SMJ will trigger automatically behind the scene
+	sort merge join is the internal mechanism, when you perform any kind of join(inner,left,right,full) SMJ will trigger automatically behind the scene
 	
 	once partition is done with source data.
 	flow is --shuffle the data b.w executors(spark will decide the suffle looking at df's) -->sort -->merge it.
@@ -718,7 +844,7 @@ in many big data projects, schema from source file/data may change over a period
 		]))
 	])
 
-**here the drawback is, all fields/StructField should have the data, if not it will throuw an error.
+**here the drawback is, all fields/StructField should have the data, if not it will throw an error.
 		eg, if we are not passing middleName for any record, then it will through an error while creating df
 		you will have to fill None/null at least
 		
@@ -768,6 +894,8 @@ in many big data projects, schema from source file/data may change over a period
 		df's are immutable															df's are mutable
 		support parallel processing													does not support parallel processing
 		Lazy evaluation																Eagarly evaluation
+		
+	**Python community introduced polars library recently. It is almost same as pyspark df
 		
 83.array_repeat("col_name",10) --it will create  list of data 10 times of col_name, later we can explode it	
 		this will be used to create test data
@@ -824,10 +952,16 @@ in many big data projects, schema from source file/data may change over a period
 91. types of views:
 	normal view - persisted across databricks
 				-can be dropped manually
+				
 	temp view - for session only (notebook level,when you install python library, when you restart cluster)
 			-will be dropped when session ends
-	Global temp view - at cluster level.
+			-They are not persisted in Unity Catalog and are automatically dropped when the session ends.
+			-You cannot directly access temporary views from Unity Catalog itself. However, you can use them within your SQL queries or notebooks to access the underlying data they represent.
+			
+	Global temp view - at cluster level.(will be avaialable for all who are using same cluster)
 			-will be dropped when cluster restarts
+			-They are stored in the global temporary schema within Unity Catalog, allowing access from any session in the workspace.
+			-You can view and manage global temporary views directly from Unity Catalog using SQL commands like SHOW VIEWS and DROP VIEW.
 
 92. We can directly read data from files
 	select * from file_format."path"
@@ -952,5 +1086,432 @@ in many big data projects, schema from source file/data may change over a period
 			.outputMode("append") \
 			.option("checkpointLocation" = "/path")
 			.option("table name")
+=====================================================================================================================================================
 		
-99.
+99. Databricks | Pyspark| AutoLoader: Incremental Data Load
+--To load incremental load (only new or modified records)
+Characteristics of Incremental Load:
+	1.Only process new data files
+	2.process the data load asap new data detected
+	3.Dont miss any new files
+	4.Good performance while processing larger directories
+	5.Repeatable pattern
+	
+Incremental loading patterns:
+pattern -1:
+	-->Water mark method (storing timestamp somewhere for comparison)
+	-->Program will keep running to check if new files arrived
+	
+	Short coming of above pattern -> Pipeline has to be executed as per schedule even through there is no new data or new file detected
+								  ->Incur unnecessary cost
+pattern -2:
+	-->checkpointing
+	-->Peformance bottleneck while listing larger directories where millions of files to process
+
+what is the best solution then?
+-->AutoLoader (Continuously,efficiently,automatically loading new files as they arrive)
+
+What is AutoLoader:
+	Incremental Data Load: Feature provided by Databricks to process incremental data load efficiently and automatically.
+	Cloud Storage System: Currently supporting only ADLS, S3, GCP and DBFS
+	File formats: Supporting bigdata file formats JSON,CSV,Parquet,AVRO,ORC,Text and Binary file formats
+	
+Components of AutoLoader:
+	->Storing the metadata of processed files through internal database(RocksDB)
+	->Processing new files immediately using spark streaming
+	->Using advanced optimized Cloud - Native components to identify new files as soon as they arrive
+
+Two parts of AutoLoader:
+	Cloud Files Data Reader + Cloud Notification Services = AutoLoader
+
+File detection mode:
+1.Directory listing mode
+2.File notification mode
+
+By default, if we dont specify, it is Directory listing mode, but,File notification mode is much faster. However, for File notification mode we need to speicify certain properties of storage service like client id, secret id etc.
+
+Basic configuration:
+		streamDF=spark.readStream \
+					  .format("CloudFiles") \ --this will identify as a autoloader
+					  .option("CloudFiles.format","csv") \
+					  .load("file path")
+
+Here we did not mention anything about file detection, hence it is Directory listing mode
+
+Use notifications:
+		streamDF=spark.readStream \
+					  .format("CloudFiles") \ --this will identify as a autoloader
+					  .option("CloudFiles.useNotifications",True) \
+					  .option("CloudFiles.format","csv") \
+					  .load("file path")
+					  
+Alongwith, useNotifications option, we also have to mention service principal (subscription id,connection string,tenantId,clientId,clientSecret,resourceGroup)
+
+eg:
+CloudFileConfig = {
+ubscription id ="",
+connection string="",
+tenantId,clientId="",
+clientSecret="",
+resourceGroup=""
+}
+
+		streamDF=spark.readStream \
+					  .format("CloudFiles") \ --this will identify as a autoloader
+					  .options(**CloudFileConfig) \ ---** since it is python dictionary, usually it is * for array/list
+					  .option("CloudFiles.format","csv") \
+					  .load("file path")
+
+to Write:
+streamDF.writeStream \
+		.trigger(once=True) --for full load, we have processingTime="1min etc"
+		.save("table location")
+		
+=====================================================================================================================================================
+100.Databricks | Pyspark| Delta Live Table: Introduction
+
+DLT is a hot topic nowadays. Many oranizations are started implementing their projects on DLT.
+
+We have medallion architecture lakehouse -> where we ingest data into Bronze layer with help of any ETL service/tool and from Bronze to Silver applying some basic transformations like type casting, adjusting date formats, cleaning up the duplicates etc. and from siler to Gold layer
+by applying all the business logics and aggregations.
+
+Looks simple isn't it? --Nope
+In real time you will see lot of complex logic between each layer it is a challenge to implement using medallion architecture.
+
+Below are the challenges in medallion architecture:
+1.Troubleshooting and debugging is a challening and time consuming
+2.Data quality is poor and need to handle manually
+3.Data linege is not avaialable to monitor the pipeline visually. Everytime we need to open the code and check like what is dependency for this table where it is inserting etc.
+4.Visibility and monitoring at more granular and logic level is not avaialable.
+5.challenge to combine both streaming data and batch data in a single pipeline.
+eg.In today's bigdata world, we are dealing with both streaming and bactch data. In a situation we may need to load streaming data into fact table and batch data into dimension table(as we know dimension tables wont get changes frequently).
+This is quite complex to handle in medallion architecture.
+
+****Below are the steps generally involved to build a any data pipeline.
+.Code development  .cluster management .Data quality checks .infrastructure management .dependency management .fault tolerance .data governance .Prod
+
+But But, using DLT we can simply focus on ONLY Code development and rest all can be taken care by DLT.
+
+So what is DLT? 
+DLT is a development framework privided by databricks which simplifies and accelerates ETL pipeline building process
+DLT follows declarative approach instead of procedural approach
+DLT framework automatically manages the infrastructure scale.
+With the help of DLT, developers can spend more time on development rather than tooling and infrastructuring.
+
+Below are the greate functionalities for DLT:(that will do automatically for you)
+1.Data transformation
+2.Cluster management
+3.Data quality validation
+4.Accelerate development process
+5.Task orchestration
+6.Monitoring
+7.Error Handling
+8.Unified batch / streaming process
+
+Development steps involved:
+1.Create live tables using notebook
+2.Createa DLT pipeline using workflow
+3.Run/schedule the pipeline
+4.Monitor metrics in UI
+
+Differece between procedural approach and declarative approach:
+Procedural approach:
+1.Explicitly define all ETL steps(ingesion,transformation and loading)
+2.must follow list of steps with proper order
+3.Execution steps must follow some procedural steps. Need to dictate each step "HOW" to perform
+4.extensive code generation
+5.Time consuming and error prone
+6.challenge in debugging and error handling
+
+Declarative approach: --It is completely opposite to procedural approach.
+1.All ETL steps are abstracted
+2.No specific order to be followed.
+3.You just declare "WHAT" is needed
+4.Inteleegent engine will automatically generate the code to extract, transform and load
+5.less code
+6.Debugging and error handling is easy
+
+**It is like outsourcing procedural approach to someone**
+
+=====================================================================================================================================================
+101. Databricks | Pyspark| Delta Live Table: Datasets - Tables and Views
+
+IMP - Currently DLT supports only Pyspark and SQL
+
+There are 3 types of datasets in delta live tables -
+1.Streaming table
+2.Materialized View or Live table
+3.View
+
+1.Streaming table:
+.Supporting Incremental and streaming ingesion from append only sources.Each record is processed only once.
+.Autoloader is used to automatically detect and individually process new files as they arrive.
+.Cloud storage and message queues are used in streaming ingestion with autoloader
+.High volume data with rapid growth with low latency.
+.No re-computation of old data needed
+.Suitable for extraction needed
+
+eg: Bronze table in medallion architecture
+
+SQL Syntax:
+CREATE STREAMING TABLe customers
+AS SELECT * FROM cloud_files("mnt/a/b/","csv")
+
+Pyspark syntax:
+@dlt table
+def customers():
+return (spark.readStream.format("cloudFiles") \
+						.option("cloudFiles.format","json") \
+						.option("cloudFiles.inferschema",True) \
+						.load("mnt/a/b/"))
+
+2.Materialized View or Live table
+.Current state of defined query is processed 
+.Handling CDC usecases like insert/delete/update
+
+.Result of query is stored as Live table.Manual DML is not supported. All DML's are handled via defined query
+.More suitable for transformation and aggregations (like silver and gold)
+
+SQL Syntax:
+CREATE live table sales_agg
+AS SELECT order_dt,city,products,sum(sales_amount)
+FROM LIVE.sales s
+JOIN LIVE.customers
+WHERE product="laptop"
+GROUP BY order_dt,city,products
+
+Pyspark syntax:
+@dlt table
+def customers():
+return (spark.readStream.format("json").load("mnt/a/b/"))
+
+3.View
+.Current state of defined query but data will not persisted 
+.Views can be referenced only within pipeline where they are defined
+.Suitable for intermediate results where data is not needed for end users or downstream applications
+
+SQL Syntax:
+CREATE LIVE VIEW V_sales_agg
+AS SELECT order_dt,city,products,sum(sales_amount)
+FROM LIVE.sales s
+JOIN LIVE.customers
+WHERE product="laptop"
+GROUP BY order_dt,city,products 
+
+Pyspark syntax:
+@dlt view
+def v_customers():
+return (spark.readStream.format("json").load("mnt/a/b/"))
+
+**IMP
+Since DLT is declarative approach, 
+you can write the code for the silver table first and then the bronze table, and Databricks Delta Live Tables will intelligently understand the order of operations and feed the bronze table first before updating the silver table. This is because Delta Live Tables uses a declarative approach to data pipelining, which means that you specify the desired state of the data, and Delta Live Tables takes care of the rest.
+
+In the declarative approach, you define the logic for transforming and enriching the data in the silver table, and Delta Live Tables will automatically keep the silver table up-to-date as the underlying bronze table changes. This eliminates the need for you to write explicit code to handle the order of operations, and it makes your data pipelines more maintainable and easier to understand.
+=====================================================================================================================================================
+
+Unity Catalog:
+Unity Catalog is a fine-grained governance solution for data on lakehouse. 
+
+It helps simplify security and governance of your data by providing a central place to administer and audit data access.
+
+Unified catalog: A unified catalog stores all your data, ML models, and analytics artifacts, in addition to metadata for each data object. The unified catalog also blends in data from other catalogs such as an existing Hive metastore.
+
+Unified data access controls: A single and unified permissions model across all data assets and all clouds. This includes attribute-based access control (ABAC) for personally identifiable information (PII).
+eg:creating the roles and granting them access
+
+Data isolation: Data isolation can be achieved at multiple levels–environment, storage location, data objects of increasing granularity–without losing the ability to manage access and auditing centrally.
+
+Data auditing: Data access is centrally audited with alerts and monitoring capabilities to promote accountability.
+eg: we can access event_logs table for auditing. Create or alter or drop obects statistics
+
+Data quality management: Robust data quality management with built-in quality controls, testing, monitoring, and enforcement to ensure accurate and useful data is available for downstream BI, analytics, and machine learning workloads.
+
+Data lineage: Data lineage to get end-to-end visibility into how data flows in lake house from source to consumption.
+
+Data discovery: Easy data discovery to enable data scientists, data analysts, and data engineers to quickly discover and reference relevant data and accelerate time to value.
+
+Data sharing: Data can be shared across clouds and platforms. Delta Sharing is an open protocol developed by Databricks for secure data sharing with other organizations, or with other teams within your organization, regardless of which computing platforms they use.
+
+We can share delta lake objects like tables,views and notebooks across the regions, platforms, users, and across the cloud providers as well.
+
+eg. steps for data sharing between region1 to region2:
+1.go Unity catalog > delta sharing > create recepient
+2.provide recepient name and identifier(select current_metastore()) --assuming recepient is from region2
+3.create share
+4.grant share
+5.attach the objects
+6.now user in region2 can open it --region2 workspace should have UC enabled to view shared datasets
+
+
+
+
+
+=====================================================================================================================================================
+Steps to create Unity catalog:
+1.Create a storage (blob or adls) --this will be used to store metadata
+2.Create databricks connector service in Azure
+3.Grant the access(eg. blob contributer) to databricks connector for above storage
+4.Go to databricks, in admin account settings, create unity catalog and attach the workspace you wish to attach
+IMP**You can have one unity catalog per region
+	You cannot assign unity catalog created in X region to workspace in Y region
+	Each workspace can be attached to only one region
+	One Unity catalog metastore can be attached to multiple worskapces
+	We dont have to create SQL end point(or warehouse) separately. When you create the compute(cluster) it should have the access to unity catalog.
+=====================================================================================================================================================
+Azure AD is now Microsoft Entra ID --Here we will create the users, groups, tenants and also invite the other users
+IAM--Identify Access Management --Once the user is created in AD, we will grant the access to any service to that perticular user. It can be at subscription level,RG level or individual resource level. Means, attach the specific role(can be inbuilt role or custom role created) to user. So that the user can access this perticular service/resource.
+
+=====================================================================================================================================================
+Lakehouse architecture in detail:
+
+The Bronze Layer in Lakehouse Architecture
+
+The Bronze layer is the first and most raw layer in the Lakehouse architecture. It serves as the landing zone for all incoming data, regardless of its format or structure.
+The Bronze layer's primary role is to store ingested data in its original state, ensuring its preservation and accessibility for later processing.
+
+Here are some key characteristics of the Bronze layer:
+
+Unvalidated: Data in the Bronze layer is not validated for accuracy or completeness. This means it may contain errors, inconsistencies, or missing values.
+Schema-on-read: The Bronze layer typically does not enforce a specific schema on the data. This allows for flexibility and scalability when dealing with diverse data sources.
+Append-only: Data is typically appended to the Bronze layer over time, preserving its history and allowing for backtracking and analysis of historical trends.
+Low cost: The Bronze layer is often implemented using low-cost storage options like object storage, making it ideal for storing large volumes of data.
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+Whether you need to maintain one or multiple bronze tables for sources with the same structure depends on several factors:
+1. Data Volume and Ingestion Frequency:
+2. Data Lineage and Auditability:
+3. Data Governance and Security:
+4. Future Processing Requirements:
+If you anticipate performing different processing or transformations on data from different sources, maintaining separate bronze tables is beneficial. This allows for individual processing pipelines tailored to each source's specific characteristics.
+If you plan to apply the same processing logic to all data regardless of source, a single bronze table might be suitable.
+
+5. Cost Considerations:
+Creating and managing multiple bronze tables can incur additional storage and compute costs. This needs to be weighed against the benefits of improved data organization and accessibility.
+A single bronze table might be more cost-effective for smaller data volumes and simpler processing needs.
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+The industry standard for historical data maintenance in the Bronze layer depends on your specific use case and data governance requirements. Here are two main approaches:
+
+1. Archiving Historical Data from the Bronze Layer:
+Moving historical data out of the Bronze layer and into a dedicated archive storage solution
+Maintaining a limited window of data in the Bronze layer for active analysis and processing
+Ensuring access controls are in place to restrict access to archived data
+
+Benefits:
+Reduces storage costs in the Bronze layer, which typically uses low-cost object storage.
+Improves performance and query efficiency by focusing active queries on a smaller subset of data.
+Simplifies data management and governance by separating active and historical data.
+Ensures compliance with data retention policies and regulations.
+
+Drawbacks:
+Requires additional infrastructure and processes for archiving and retrieving data.
+May increase complexity for queries that require access to both current and historical data.
+Can make it more challenging to track data lineage and provenance across different data stores.
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+2. Keeping All Historical Data in the Bronze Layer:
+Storing all historical data in the Bronze layer alongside the active data.
+Partitioning data based on timeframes to optimize query performance.
+Implementing metadata management practices to track data lineage and provenance.
+
+Benefits:
+Simplifies data management by keeping all data in a single location.
+Facilitates access to historical data for analytics and research purposes.
+Provides complete data lineage and provenance for all data points.
+
+Drawbacks:
+Increases storage costs in the Bronze layer.
+May decrease query performance and efficiency, especially for large datasets.
+Requires additional effort to manage and maintain a growing data volume
+=====================================================================================================================================================
+Diving Deeper into the Silver Layer of Lakehouse Architecture:
+
+The Silver layer within a Lakehouse architecture serves as a crucial intermediary between the raw data in the Bronze layer and the curated, analysis-ready data in the Gold layer. It acts as a processing and transformation stage where raw data is enriched, validated, and transformed into a more usable form for downstream analytics and applications.
+
+Here are some key characteristics of the Silver layer:
+1. Structured and Enriched Data:
+	defined schema and data structure, facilitating efficient querying and analysis.
+	joining data from different sources, deduplication, and data quality checks.
+	
+2. Optimized for Consumption:
+	The Silver layer aims to provide data in a format ready for specific use cases and analytic tasks.
+	This may involve creating pre-aggregated datasets, materialized views, or calculated metrics for improved query performance.
+	
+3. Version Control and Lineage Tracking:
+	Data in the Silver layer is versioned to track changes and maintain historical context.
+	Lineage information is also documented to understand the origin and transformations applied to the data.
+	
+4. Governance and Security:
+	Access control policies are implemented to ensure only authorized users have access to sensitive data in the Silver layer.
+	Data governance practices are enforced to ensure the quality, consistency, and reliability of the data.
+	
+5. Scalability and Performance:
+	The Silver layer needs to be scalable to handle large data volumes and support concurrent queries efficiently.
+	Techniques like data partitioning and indexing are utilized to optimize query performance.
+
+Transformations beyond cleansing and deduplication:
+Data enrichment: Joining data from different sources, calculating derived attributes, and adding context-specific information.
+Data aggregation: Pre-aggregating data for specific use cases to improve query performance.
+Feature engineering: Creating new features from existing data to enhance machine learning models.
+Data normalization: Converting data to a consistent format for easier comparison and analysis.
+Data partitioning: Organizing data based on specific criteria for efficient querying and analysis.
+Data quality checks: Implementing advanced checks beyond basic validation, like anomaly detection and data completeness analysis.
+
+Maintaining historical data in the Silver layer:
+Whether to maintain historical data in the Silver layer depends on various factors:
+
+Frequency of access: If historical data is frequently accessed for analysis, it might be beneficial to keep it in the Silver layer for faster retrieval.
+Storage costs: Keeping large volumes of historical data in the Silver layer can incur significant storage costs.
+Data governance requirements: Regulations or internal policies might require retaining historical data for specific periods.
+Data lifecycle management strategy: Integrating the Silver layer into a broader data lifecycle management strategy helps determine the appropriate retention period for different data subsets.	
+
+Users beyond the Golden layer:
+While the primary purpose of the Silver layer is to prepare data for the Golden layer, other users may benefit from accessing it:
+
+Data scientists: Utilize the Silver layer data for exploratory analysis, model development, and feature engineering.
+Business analysts: Conduct ad-hoc queries and analyze specific trends or insights.
+Data engineers: Monitor data quality, troubleshoot data pipelines, and perform data lineage analysis.
+Application developers: Access pre-processed data for building data-driven applications and dashboards.
+	
+**Move the old data to archive if your business use case is just to extract latest data out of it
+=====================================================================================================================================================
+
+Delving into the Golden Layer of Lakehouse Architecture:
+
+The Golden layer sits at the pinnacle of the Lakehouse architecture, representing the curated, analysis-ready data extracted from the raw data in the Bronze layer and the enriched data in the Silver layer. It serves as the single source of truth for business insights and decision-making.
+
+Key characteristics of the Golden layer include:
+Highly refined data: The data is cleansed, transformed, and aggregated to fit specific business needs and analytic purposes.
+Optimized for query performance: Data structures and indexes are implemented to ensure efficient and fast retrieval for complex queries and data exploration.
+Business-oriented: Data is organized and presented in a way that aligns with business users' needs and facilitates informed decision-making.
+Governance and security: Strict access control mechanisms and data governance policies are enforced to ensure data integrity and confidentiality.
+Versioning and lineage tracking: Every data change is tracked and documented to understand the data's provenance and ensure consistency over time.
+
+Benefits of the Golden layer:
+Enhanced data quality and consistency: Provides reliable data for accurate analysis and reporting.
+Reduced time to insights: Offers readily available data, eliminating the need for pre-processing before analysis.
+Improved business decision-making: Enables data-driven decisions based on reliable and consistent information.
+Increased operational efficiency: Streamlines data access and reduces time spent on data preparation tasks.
+Enhanced collaboration and communication: Provides a single source of truth for all stakeholders.
+
+Challenges of the Golden layer:
+Complexity of development and maintenance: Building and maintaining a robust Golden layer requires careful planning, data modeling, and ongoing maintenance.
+Performance considerations: Optimizing data structures and indexing strategies is crucial for ensuring fast query performance.
+Data governance overhead: Implementing and enforcing access controls and data quality standards requires effort and resources.
+Data staleness risk: Balancing data freshness with the time required for data validation and refinement is essential.
+
+Common Golden layer data models:
+Dimensional models: Designed for analyzing business processes and relationships between different entities.
+Data marts: Subject-specific data subsets tailored for specific business areas and analytics needs.
+Analytical databases: Optimized for fast and efficient querying and data exploration.
+
+Best practices for Golden layer management:
+Define clear data governance policies and access control rules.
+Establish data quality standards and monitoring procedures.
+Implement automated data validation and cleansing processes.
+Document data lineage and transformations thoroughly.
+Monitor query performance and optimize data structures as needed.
+Regularly review and update data models and definitions.
+Communicate clearly with stakeholders about data availability and usage guidelines.
+=====================================================================================================================================================
+
+
+Datamesh:

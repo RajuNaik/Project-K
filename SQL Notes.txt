@@ -355,3 +355,17 @@ select student,marks,subject from
 UNPIVOT
 (subject for marks in([Geography],[Maths],[Science])
 )as tab2
+======================================================================================================================================================
+
+Delete duplicate records from a table:
+1.using window function -
+
+with cte1 as(
+select *,row_number() over(partition by EmpID,FirstName,LastName,Salary order by(select null)) as rn
+from EMP_DUP
+)
+delete from cte1 where rn>1;
+
+
+2. Using group by (can not delete records using group by and window )
+

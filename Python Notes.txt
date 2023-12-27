@@ -7,7 +7,7 @@ constant.py --A=1
 create main file now and call constant values
 main.py
 print(constant.A)
-
+======================================================================================================================================================
 Data type conversion: 
 We have 2 types of data type conversions in Python
 1.Implicit Type Conversion -- In Implicit type conversion, Python automatically converts one data type to another data type. 
@@ -19,12 +19,12 @@ var2="123" --var1+var2 will through an error--to fix this--var3=int(var2)--sum=v
 
 Python I/O: Takes input from user
 name=input("enter the name: ) --print(name)
-
+======================================================================================================================================================
 Namespaces:
 Built-in (like print,id etc)
 names to objects, and scope of a variable.global,non-local,local 
-
-Data types:
+======================================================================================================================================================
+Data types / Data structures:
 Int
 Float
 Boolean
@@ -38,15 +38,16 @@ strings--immutable
 	  eg:print("The {a} {a} {c}".format(a="1st",b="2nd",c="3rd"))
 	  if we have Quotes(",') with in the string then use ('''    ''')  or use escape character before Quotes("this is \"String\"")
 	  
-	  
+======================================================================================================================================================	  
 Compound data types:	
 Lists --
 collection of elements --mutable--can do indexing and slice
 mylist=["a","b","c",1,12.4,"sttrng"]
 for append at end--mylist.append()
 for remove at end --mylist.pop()
+to delete from perticular index/place ---mylist.pop(index)
 to insert element at speicific location(acc indexing)--mylist.insert(index,value)
-to remove element from speicific location--mylist.remove(index)
+to remove element from speicific location--mylist.remove(value)
 for sort --mylist.sort(reverse=False) --ascending
 for reverse sort --mylist.sort(reverse=True) --for descending
 to merge two lists --list1.extend(list2)
@@ -55,20 +56,46 @@ to copy from one list to other --newlist.copy(oldlist)
 to clear the list -- list1.clear() --will delete all the elements from list and keep empty list
 to delete complete list --del listname
 
+to delete duplicate elements from list--convert list to set and back to list. since set will not hold duplicate
+eg:
+lst=[1, 4, 7, 1, 2, 9, 1, 1]
+
+set1=set(lst)
+new_list=list(set1)
+print(new_list)
+
+Interview Question:
+count the number of each element repeated:
+lst=[1, 4, 7, 1, 2, 9, 1, 1, 7, 4]
+
+set1=set(lst)
+new_list=list(set1)
+print(new_list)  ##[1, 2, 4, 7, 9]
+
+res_list=[]
+for i in new_list: ####Iterating over distinct list and then counting, finally creating the dictionary in list
+    cnt=lst.count(i)
+    res_list.append({i:cnt})
+
+print(res_list)
+
 **comprehensive list: most efficient and time saving way to declare the lists
 newList = [ expression(element) for element in oldList if condition ] 
 lst=[int(i) for i in range(5)]
 print(lst)
 **strip() --funtion like ltrim,rtrim
 map() --
+
+======================================================================================================================================================
 			
 Tuples:
 A tuple in Python is similar to a list. The difference between the two is that we 
 cannot change the elements of a tuple once it is assigned whereas we can change the elements of a list
+**However, we can create a new tuple out of existing one.
 my_tuple = (1, "Hello", 3.4)
 # Creating a tuple having one element --my_tuple = ("hello",)
 can be indexed and sliced
-
+======================================================================================================================================================
 Sets:
 A set is created by placing all the items (elements) inside curly braces {}
 A set is an unordered collection of items. Every set element is unique (no duplicates) and must be immutable (cannot be changed).
@@ -93,7 +120,7 @@ eg:set3=set1.union(set2)  orelse set3=set1|set2
 Set Membership Test:
 eg:print("checking", 1 in set1) --True if available and false if not available
 
-
+======================================================================================================================================================
 Dictionaries:
 Python dictionary is an unordered collection of items. Each item of a dictionary has a key/value pair.
 **Key should be unique
@@ -115,7 +142,7 @@ to delete dictionary --del dict
 **nested dictionary:
 Dict = {'Dict1': {1: 'Geeks'},
         'Dict2': {'Name': 'For'}}
-		
+======================================================================================================================================================		
 Arrays:
 same as list --
 find the element in a array:
@@ -137,7 +164,7 @@ sliced_val=a[0:2] --print from index 0 to 2 --here 2 is inclusive
 a.pop() #remove last element
 a.remove(5) #remove first 5 found
 
----------------------------------------------------------------
+======================================================================================================================================================
 Input Funtions:
 var1=input("enter the value:") --it will expect value to be entered from user  and takes only one value
 if we wanted to read multiple values at a time then --use split function
@@ -156,17 +183,16 @@ print(x,end="") --here end can be spaces or tabs or any other character
 sep parameter in print():
 seperator is to seperate output values eg:
 print(x,y,z,sep="@")  -- so it will seperate values of x,y,z with @
--------------------------------------------------------------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 Python Operators:
 Arithmatic Operations -- +,-,*,/ --- ** for exponent and // for quotient and % for remainder
 Logical operators --and,or,not
--------------------------------------------------------------------------------------------------------------------------------------------------------
-
+======================================================================================================================================================
 
 Python Flow Control --Statements and loops
 if <cond> :
    <body>
-------------
+
 if <cond>:
 	<body>
 elif <cond>:
@@ -181,7 +207,7 @@ if <cond>:
 	else <optional cond>:
 else <optional cond>:
 	<body>
---------------------------------------------------
+======================================================================================================================================================
 For loop:
 syntax:
 for <variable> in (list/string/tuple):
@@ -190,7 +216,7 @@ for <variable> in (list/string/tuple):
 with range: it increments the value in range automatically
 for i in range(1,11):  --here 11 is exclusive
 	<body of for loop>
----------------
+======================================================================================================================================================
 while loop:
 while <cond> :
 	<body>
@@ -202,9 +228,7 @@ while <cond> :
 	<body>
 else:
 	<body>
---------------------------------------------------------
-
-
+======================================================================================================================================================
 break and continue:
 
 break --The break statement terminates the loop containing it. Control of the program flows to the statement immediately after the body of the loop.
@@ -222,7 +246,7 @@ for i in lang:
     if i in ("swift","C++") :
         continue
     print(i) -- Here if lang is either swift or C++, the loop will skip that perticular iteration and continue with rest of the iterations
------------------------------------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 
 Python pass Statement:
 In Python programming, the pass statement is a null statement. 
@@ -233,7 +257,7 @@ i=20
 if i>0:
  pass --do nothing but it will not through any error
 
------------------------------------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 
 Funtions: 
 2 types --User defined and built in(like print,input,len,sum,int,float etc)
@@ -281,7 +305,7 @@ num2=int(input("enter the second value: "))
 
 result=mult_func(num1,num2)
 print(result)
-------------------------------------------------
+======================================================================================================================================================
 default argument values -- if we dont pass any values to the arguments, in such cases it will take default values
 eg:
 def sum_fun(n1=1,n2=2):   --here n1=1,n2=2 default values, it will take default values if we dont pass the values from calling function
@@ -308,7 +332,7 @@ def fact(num):
 num=int(input("Enter the value: "))
 result=fact(num)
 print(result)
--------------------------
+======================================================================================================================================================
 Python Anonymous/Lambda Function:
 In Python, an anonymous function is a function that is defined without a name.
 While normal functions are defined using the def keyword in Python, anonymous functions are defined using the lambda keyword.
@@ -322,11 +346,11 @@ lambda can also take multiple arguments but only ONE EXPRESSION
 Eg:
 max_val=lambda n1,n2: n1 if n1>n2 else n2 --here we have 2 arguments n1 and n2 BUT ONLY ONE EXPRESSION
 print(max_val(1,2))
-----------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 Global and local variables:
 variable defined outside function is global by default and inside function is local by default
 global keyword is used to make loca variable to global--though it is not a best practice
---------------------------------------------------------------------------------------------
+======================================================================================================================================================
 Python Modules:
 like math --it includes all math related functions available inside it, we just have to import and use them like below
 import math
@@ -337,10 +361,10 @@ result=math.sqrt(36) --it gives you as 6--here sqrt function is available in mat
 
 dir(math)
 print(dir(math))
---------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 Python packages:
 **revisit
---------------------------------------------------------------
+======================================================================================================================================================
 Files:
 Open--Read/Write/Append--Close
 
@@ -364,7 +388,7 @@ write_content=file1.write("New content to overwrite existing file\n")
 append:
 file1=open("python.txt","a")--here "a" is for append mode
 write_content=file1.write("append 3\n")
----------------------------
+======================================================================================================================================================
 
 Python lines: Read lines in a list
 Eg:
@@ -375,7 +399,7 @@ print(readline_content)  -o/p is ['append 1\n', 'append 2\n', 'append 3\n', 'app
 We also write in lines like below:
 file1=open("python.txt","w")
 readline_content=file1.writelines(["readline1","\nreadline2"])
------------------------------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 Python directories:
 cwd--current working directory --like pwd in Unix--but to know current working directory, we need to import os
 Eg:
@@ -392,7 +416,7 @@ os.mkdir() --to create new directory
 os.rename("old file/dir","new file/dir") --to rename file or directory
 os.remove("file name ") --to remove file 
 os.rmdir("directory name") --to remove directory--make sure directory is empty before removing else it will through an error
------------------------------
+======================================================================================================================================================
 
 Exception and handling them:--try: --where exception may happen--except: --like else part
 Eg:
@@ -410,12 +434,12 @@ try:
 except:
     print("exception occured, please try again") --it is like if and else, if there a exception in try block then exception block will be executed
 	if there are no exceptions in try block, then except block will completely omitted.
----------------------
+======================================================================================================================================================
 Python try...finally
 try:
 except:
 finally:  --it is optional and it if called, it will be executed at any cost no matter what.
--------------------------------------------------------------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 
 OOPs concepts:
 Class:A class is a blueprint for the object.
@@ -423,7 +447,7 @@ Python inheritance --class derived from main class
 method overrdiing--method from child class will override method from parent class if method names are same
 multiple inheritance --a class derived from more than one base class
 Operator Overloading in Python
--------------------------------------------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 
 Date and time concepts:
 import datetime as dt --here datetime is the module we need import
@@ -441,7 +465,7 @@ import time
 print("statement 1") --it will be printed immediately
 time.sleep(10) --Delays the exection for 10 seconds
 print("statement 2") -- print this statement after above 10 seconds
--------------------------------------
+======================================================================================================================================================
 
 Special methods:
 like - regex,subprocess,datetime,json,csv,requests,argparse,configparser,database access,logging,smtplib,pandas
@@ -451,7 +475,7 @@ json:
 csv:
 pandas:
 
-----------
+======================================================================================================================================================
 RegEx:
 MetaCharacters - Metacharacters are characters that are interpreted in a special way by a RegEx engine. 
 Here's a list of metacharacters: [] . ^ $ * + ? {} () \ |
@@ -462,7 +486,7 @@ We can also use -
 [a-e] is the same as [abcde]
 [1-4] is the same as [1234]
 [0-39] is the same as [01239]
-------------
+======================================================================================================================================================
 invert(^) -meaning not eg: [^abc] means any character except a or b or c.
 -------------------------
 .(period) --one character Eg: ..  it will match 2 chars
@@ -526,7 +550,7 @@ foo\B -- 'the afoo test' true
 
 \D - Matches any non-decimal digit. Equivalent to [^0-9]
 \D --1ab34"50 --returns --ab"
---------------------------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 re.findall()
 returns all matches patterns from a string to a list:
 
@@ -535,7 +559,7 @@ string = 'hello 12 hi 89. Howdy 34'
 pattern = '\d+'
 result = re.findall(pattern, string) 
 print(result) --# Output: ['12', '89', '34']
---------------------------
+======================================================================================================================================================
 re.split() --splits the string where there is a match and returns a list of strings where the splits have occurred.
 consider same above program --
 ret2=re.split(pattern,str) --o/p--['This is ', ' a string ', ' for ', ' test', 'ing', '']
@@ -567,7 +591,7 @@ if match:
   print("pattern found inside the string")
 else:
   print("pattern not found")  
-----------------------------------------------------------------
+======================================================================================================================================================
 match.group() --The group() method returns the part of the string where there is a match.
 
 import re
@@ -598,7 +622,7 @@ You can get the part of the string of these parenthesized subgroups. Here's how:
 >>> match.groups()
 ('801', '35')
 	
-------------------------
+======================================================================================================================================================
 match.start(), match.end() and match.span()
 The start() function returns the index of the start of the matched substring. Similarly, end() returns the end index of the matched substring
 >>> match.start()
@@ -607,7 +631,7 @@ The start() function returns the index of the start of the matched substring. Si
 8
 >>> match.span()
 (2, 8)
------------------------------------------------------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 
 Json special methods in Python:
 sample json data:
@@ -643,7 +667,7 @@ dict={"name":"Ram","age":29,"loc":"hyd"}
 
 with open('person.txt', 'w') as json_file:
   json.dump(dict, json_file) --converts into json --here it is just dump
--------------------------------------------------
+======================================================================================================================================================
 Python pretty print JSON:
 import json
 person_string = '{"name": "Bob", "languages": "English", "numbers": [2, 1.6, null]}'
@@ -659,7 +683,7 @@ o/p:
         null
     ]
 }
---------------------------------------------------------------------------------------------------
+======================================================================================================================================================
 
 csv special methods in Python:
 Let's read this file using csv.reader():

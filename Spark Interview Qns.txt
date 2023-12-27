@@ -2,7 +2,7 @@
 2.hadoop vs spark
 3.How spark is different from Map Reduce?
 4.difference between databricks and spark
-5.Can you talk about memmory management in spark
+5.Can you talk about memory management in spark
 6.different types of clusters in Databricks
 7.difference between client mode and cluster mode in deploying spark applications
 8.what is cluster manager
@@ -10,15 +10,15 @@
 10.How parallelism is achieved in spark?
 11.Can you talk about RDD,Dataframe and Dataset--
 RDD is very low level and native API to spark.We have to write lot of code and it is difficult to understand and maintain.We have to tell how and what to do. No schema hence it impacts the performance.It supports almost all the languages.
-RDD support only on-heap memmory and does not suuport off-heap memmory and it has to perform garbage collection frequently and it is a additional overhead of spark.
+RDD support only on-heap memmory and does not support off-heap memmory and it has to perform garbage collection frequently and it is a additional overhead of spark.
 
 DF -- high level API. DF is a columnar and row fromat API just like any other table in relational database.Highly optmized and catalyst optmizer will apply all optmization techniques automatically as it allows schema.Supports almost all programming languages
 DF supports both on-heap and off-heap memory and garbage collection scanning can be mininized.
-**Spark will chekc type safety at run time. It will not throw any error at compile time
+**Spark will check type safety at run time. It will not throw any error at compile time
 
 Dataset--supports only Java and Scala.
 Dataset supports both on-heap and off-heap memory and garbage collection scanning can be mininized.
-**Spark will chekc type safety at compile time itself.
+**Spark will check type safety at compile time itself.
 
 12.What is Tranformation and Action in spark
 13.What is lazy evaluation and why it is imp
@@ -26,9 +26,9 @@ Dataset supports both on-heap and off-heap memory and garbage collection scannin
 15.what do you mean by immutability in spark and what is the advantages of it
 16.Can you talk about spark architecture
 17.difference between driver, worker and executor
-Driver is mastermind--it will create logical execution pla, optmization plans, submit the applications to worker by interacting with cluster manager
+Driver is mastermind--it will create logical execution plan, optmization plans, submit the applications to worker by interacting with cluster manager
 Worker--separate node in cluster, logically divided into executors
-Execuotr--nothing but a JVM(java virtual machine),contains cores and the on-heap memmory
+Executor--nothing but a JVM(java virtual machine),contains cores and the on-heap memory
 
 18.How partitions are created in spark
 19.what is shuffling in spark processing
@@ -60,7 +60,7 @@ default limit of broadcast join dataset it 10MB.
 2.What is the role of repartition and coalesce in performance optmization
 3.what is data skew? --un evenly distributed partitions--to avaoid this we need to do salting technique
 4.what is salting technique--splitting larger partition into smaller
-5.whart is AQE
+5.what is AQE
 6.what is cache and persist
 7.what are the different level of persist
 8.What is dataframe checkpoint?
@@ -133,7 +133,7 @@ df = spark.read.jdbc(url=url, table=table, properties=properties)
 21.OOM(out of memory) issue encountered. How to troubleshoot--check for data skew, serialization,collect,enhance executors memmory
 
 22.what is the impact on collect large datasets
---collect means collecting all the data or results from all the executors. It will create a overhead to driver and it starts performing poorly for other actions.
+--collect means collecting all the data or results from all the executors to driver node. It will create a overhead to driver and it starts performing poorly for other actions.
 
 22.What is dynamic partition pruning(skip)
 --when you want to join partitioned fact table with dim table, and you have some filters in join. 
@@ -283,7 +283,8 @@ same as result cache in snowflake
 CREATE BLOOM FILTER INDEX my_table_index
 ON my_table (my_column)
 
-It helps to scan if the data is NOT present in perticular data file or may be present based on our query.
+The Bloom filter index is an additional optimization that uses Bloom filters to skip irrelevant files and blocks more efficiently.
+A Bloom filter is a probabilistic data structure that tests whether a given element is a member of a set. It may produce false positives but never false negatives.
 this way it helps the performance
 
 ######################################################################################################################################################
@@ -300,7 +301,7 @@ df=rdd1.todf()
 4.How to create df from bigdata files
 5.what is MSCK command in spark?
 MSCK --Metastore Consistency Check
-The MSCK REPAIR TABLE command is used in Databricks to recover partitions in a table and update the Hive metastore
+The MSCK REPAIR TABLE command is used in Databricks to recover partitions in a table and update the Hive metastore.
 The MSCK REPAIR TABLE command is used in Apache Spark (specifically in Spark SQL) to repair or refresh the metadata for tables managed by the Hive metastore. It's a useful command when working with external tables that are located in a data lake or an external storage system like Hadoop HDFS, Amazon S3, or Azure Data Lake Storage. This command is typically used in conjunction with data stored in partitions.
 
 MSCK REPAIR TABLE my_table
@@ -312,7 +313,7 @@ This can happen when data files or deletion vector files are manually deleted fr
 
 FSCK REPAIR TABLE my_table
 
-7.tructType vs StructField
+7.StructType vs StructField
 8.MapTpe vs ArrayTpe
 9.Distinct vs Dropduplicates
 10.how UDF impact performance?
@@ -321,6 +322,9 @@ hence serialization has to happen, it is costly, UDF is always blackbox, as it c
 
 11.how to improve UDF performance then?
 we can register the UDF in spark, in this way spark will apply certain optmization techniques
+Whenever possible, prefer using built-in Spark functions (org.apache.spark.sql.functions) instead of UDFs. Spark's built-in functions are often optimized and can benefit from Spark's Catalyst query optimizer.
+
+If you're using PySpark, consider implementing UDFs in Scala or Java and using the PySpark udf function to wrap them. Python UDFs can have additional overhead due to the need for data serialization between Python and the JVM.
 
 from pyspark.sql.functions import udf
 from pyspark.sql.types import IntegerType
@@ -381,12 +385,11 @@ dropmalform, drop bad records
 failfast--dont allow anything
 
 ######################################################################################################################################################
-yspark Development: Spark/Databricks Interview Questions
+Pyspark Development: Spark/Databricks Interview Questions
 
-21.difference between dataframes
-subtract or exceptAll
+21.difference between dataframes subtract or exceptAll
 22.what is spark submit ?
-23.how to get spar configuration value and how to change it
+23.how to get spark configuration value and how to change it
 	spark.config.set("param",val) --spark.config.get("param")
 24.what are the different options while writing a df
 	format,mode,paritionBy,bucketBy,header

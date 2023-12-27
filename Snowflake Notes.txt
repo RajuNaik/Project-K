@@ -3,20 +3,77 @@ cloud services(security,optimization,metadata)
 |
 compute layer(cache,virtual wh)
 |
-storage layer(eg.s3)
+storage layer(remote storage eg.s3)
 
 2.What is shared disk and shared nothing architecture and their drawbacks.
---shared disk ->multiple compute nodes share one disk hence scalability issue,bottle neck while reading and qriting
---shared nothing-->one compute node share one disk.draback is data will shuffle when one node expect data from another and when any node is failed
+--shared disk ->multiple compute nodes share one disk hence scalability issue,bottle neck while reading and writing
+--shared nothing-->one compute node share one disk,drawback is data will shuffle when one node expect data from another and when any node is failed
+
 3.Hence in snowflake, compute node and storage layers are independant and they can scale up and down independently.
-This is called multi cluster shared data architecture
+This is called multi cluster, shared data architecture
+
 4.snowflake cache in cloud services layer and compute layer and its uses
 5.if we run one query, it will fetch from storage layer, if we run same query again it will read from cloud services cache, and if we disable this 
 cloud services cache, it will read from next layer's cache that is compute layer.
 
-***data stored in storage layer is in column format and compressed and encrypted. When you fire the query it will de compress and decrypt and send
-it back to cloud servces over the network.
-===================================================
+***data stored in storage layer is in column format(and file format is CDP - Cloud Data Platform where as it is Parquet in Databricks) and compressed and encrypted. When you fire the query it will de-compress and decrypt and send it back to cloud servces over the network.
+***We cannot directly access these CDP files, we have to fire the SQL query.
+======================================================================================================================================================
+Snowflake Virtual Warehouse:
+
+The Snowflake virtual warehouse, often referred to as a "warehouse," is available in two types: Standard and Snowpark-optimized. Here's a brief overview of each type:
+
+Standard Virtual Warehouse:
+Provides a balance of compute and storage resources for most workloads.
+Can be scaled up or down to accommodate the need for more or less compute resources based on the type of operations being performed by the warehouse.
+Can be set to automatically resume or suspend based on activity.
+
+Snowpark-optimized Virtual Warehouse:
+Provides high-performance compute resources for Snowpark workloads, which are used for data processing and transformation tasks.
+Recommended for workloads that have large memory requirements, such as ML training use cases.
+
+SQL for standard:
+CREATE WAREHOUSE my_warehouse
+  WAREHOUSE_SIZE = 'MEDIUM'
+  WAREHOUSE_TYPE = 'STANDARD'  -----IMP
+  AUTO_SUSPEND = 1800
+  AUTO_RESUME = TRUE;
+ 
+SQL for Snowpark-optimized Virtual Warehouse:
+CREATE WAREHOUSE my_snowpark_optimized_warehouse
+  WAREHOUSE_SIZE = 'MEDIUM'
+  WAREHOUSE_TYPE = 'SNOWPARK-OPTIMIZED'   -------IMP
+  SCALING_POLICY = 'AUTO_SCALE';
+  
+Auto scaling virtual warehouse:
+Means scale up (increase the size) and scale down (decrease the size):
+
+CREATE WAREHOUSE my_auto_scale_warehouse
+  WAREHOUSE_SIZE = 'MEDIUM'
+  WAREHOUSE_TYPE = 'STANDARD'
+  SCALING_POLICY = 'AUTO_SCALE'
+  AUTO_SUSPEND = 300
+  AUTO_RESUME = TRUE;
+
+
+Multi clustore virtual warehouse:
+Adding up the new clusters depends on need:
+
+CREATE WAREHOUSE my_multi_cluster_warehouse
+  WAREHOUSE_TYPE = 'STANDARD'
+  WAREHOUSE_SIZE = 'MEDIUM'
+  MAX_CLUSTER_COUNT = 3
+  MIN_CLUSTER_COUNT = 1
+  SCALING_POLICY = 'AUTO_SCALE';
+
+
+======================================================================================================================================================
+**when a user insert data into snowflake table, snowflake will create the micro partitions behind the scene and it will store the data in partition wise. Also in columnar storage. means in each partition , data will be stored in column wise individually.
+
+And we know, if it is storing individually, analytical query will be faster.
+
+But, within the patition, sorting is not guaranteed. Hence we can create clustering on table, so that data will be sorted within each micro patition.
+
 Clustering(distribution in synapse): The process of grouping micro partition(also called table file) is called clustering. Micro partition usually b/w 50-500MB
 **SF will create micro partition based on how we insert or load data automatically on each table.
 **each micro partition stores data in column format.
@@ -31,26 +88,78 @@ location varchar2(20)
 **While choosing cluster key, choose from lowest cardinality to highest cardinality(means, lowest distinct is the cluster key)
 for eg.in emp table, location is the cluster key instead empid or salary
 
-=================================================
+*********
+Snowflake stores micro-partitions in a proprietary, optimized file format called Snowflake's Cloud Data Platform (CDP) format. This format is designed to provide efficient storage, compression, and performance for analytical workloads.
+
+Here are some key points about Snowflake's CDP file format:
+Columnar Storage
+Compression
+Metadata
+etc.
+======================================================================================================================================================
 Performance tuning:
 query optimization, create cluster
-in SF, there will not be any PK's or Indexes. But still ACID properties are guaranteed using micro partitions
-====================================
+in SF, there will not be any PK's or Indexes. But still ACID properties are guaranteed using micro partitions.It will apply dynamic data pruning while performing DML operations.
+======================================================================================================================================================
 Types of internal stages in SF:
 1.User stages @~
 2.Table stage @%
 3.Named stage @
 
+
+Internal stage:
+
+An internal stage in Snowflake is a storage location within a Snowflake account that temporarily holds data files during certain operations, such as loading data into a table or unloading data from a table
+
 To load file from local to SF, we can directly upload using UI if it is small.
 IF it is a huge file, first load the file into table stage using put command and then load into SF table using copy command
-and vise versa, if you want to download data from SF to local, copy the data fri SF table stage first using copy command and then use get command
+and vise versa, if you want to download data from SF to local, copy the data from SF table stage first using copy command and then use get command
 to download the file from stage to local.
 
 **Internal stages are automatically created for you. to list down all the stages, show stages in database_name.
 It will also display the external stages but storage_integration column would be null for internal stages.
 
-** we can not load/copy zipped file from external storage like S3 to SF.
-=================
+eg:
+Suppose you have a CSV file named customer_data.csv on your local computer. You want to load this data into a Snowflake table named customer.
+1.CREATE STAGE my_stage
+2.PUT customer_data.csv @my_stage;
+3.COPY INTO customer
+FROM @my_stage
+FILE_FORMAT = (TYPE = CSV);
+
+Here are the main use cases for internal stages in Snowflake:
+
+Efficient Data Loading: 
+Internal stages allow Snowflake to load multiple data files in parallel, which can significantly improve the load performance
+When data is staged in an internal stage, Snowflake can efficiently load the data into a table, reducing the time taken for the data loading process.
+
+Efficient Data Unloading: 
+Similarly, Snowflake can write multiple data files in parallel when unloading data from a table
+This can improve the performance of data unloading operations.
+
+======================================================================================================================================================
+External stage:
+The purpose of an external stage in Snowflake is to provide a way to access and load data from external cloud storage platforms, such as Amazon S3, Microsoft Azure Blob Storage, or Google Cloud Storage. External stages are used to define the connection information and access credentials required to access data stored in these external platforms. They allow businesses to control the data transfer process and protect their data from unauthorized access
+
+Here are some key points about the purpose of external stages in Snowflake:
+Data Transfer: 
+External stages allow users to move data from external sources, such as S3 buckets, to internal Snowflake tables. They provide a secure and controlled environment for accessing and loading data from external cloud storage platforms
+
+Flexibility and Cost-Effectiveness: 
+External stages offer flexibility and cost-effectiveness for handling large volumes of data stored in external cloud storage. They allow businesses to easily encrypt their data for added security and protect it from unauthorized acces
+
+** we cannot load/copy zipped file from external storage like S3 to SF.
+
+CREATE STAGE my_external_stage
+STORAGE_INTEGRATION = s3_int
+URL = 's3://mybucket/encrypted_files/'
+FILE_FORMAT = my_csv_format;
+
+**********IMP*************
+
+only difference between internal stage and external stage is, storage_integration. It will NOT be there in internal stage.
+
+======================================================================================================================================================
 We can create a view on top of S3 file and query the view. We can also apply transformations
 We can create a table on top of S3 file and query the view. We can also apply transformations
 Diff is view will be refreshed automatically whenever it encounter a new file in S3 where as in table it cant.
@@ -59,88 +168,333 @@ Diff is view will be refreshed automatically whenever it encounter a new file in
 Ans is, view will query all files from S3 every time and time consuming incase of huge file in S3.
 Where as in external table, it maintains the metadata like file name,registerd/un registered, MD5 result of each file in information schema.
 So quering external table is recommended over view.
-==============
+======================================================================================================================================================
+Creating External Table on S3 file:
+
+-- Create a Stage pointing to your S3 bucket
+CREATE OR REPLACE STAGE s3_stage
+URL = 's3://your-s3-bucket-name/your-folder/'
+CREDENTIALS = (AWS_KEY_ID = 'your-aws-access-key-id'
+               AWS_SECRET_KEY = 'your-aws-secret-access-key');
+
+-- Create an External Table using the Stage
+CREATE OR REPLACE EXTERNAL TABLE your_external_table
+(
+  COLUMN1 VARCHAR(100),
+  COLUMN2 INT,
+  COLUMN3 DATE
+)
+WITH LOCATION = @s3_stage
+FILE_FORMAT = (
+  TYPE = 'CSV'
+  FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+  COMPRESSION = 'AUTO'
+)
+AUTO_REFRESH = FALSE; -- Set to TRUE if you want automatic refresh of metadata
+
+-- Grant necessary permissions to your user or role
+GRANT SELECT ON EXTERNAL TABLE your_external_table TO ROLE your_role;
+
+
 Partitioning on External Table:
 suppose, if you dont want to scan all files every time and avoid unwanted files, we can create partition so that it will scan only those files,
 
 create external table ext_tab(
-dept string as substring(metadata$filename,5,10), --segrigate file names matching
+dept string as substring(metadata$filename,5,10), --segregate file names matching
 name string as (value:c1::string),
 etc
 partition by (dept)
-============================
+======================================================================================================================================================
 COPY command options:
 Validate=no of rows| etc--this wont load the data into table
 on_error=continue --default it is abort
 pattern=*emp.csv 
 
-**How to capture errpr records:
-ON_ERROR=continue
-to view error records--select * from table(validate(emp,job_id==>'query id'))
+To capture error records in a new table during the COPY INTO operation in Snowflake, you can use the ON_ERROR option along with the ERROR_TABLE parameter. This allows you to specify a table where Snowflake will store the records that encountered errors during the loading process.
 
-to create a error table--
-create or replace error_tab select * from table(validate(emp,job_id==>'query id'));
+COPY INTO your_table
+FROM '@your_stage/path/to/data'
+ON_ERROR = CONTINUE  -- or ABORT_STATEMENT, SKIP_FILE, CONTINUE_LOAD
+ERROR_TABLE = your_error_table;
 
-enforce_length=true|false --if target table in SF has less length, it will automatically increase
-Force=True|false --default is false
+CREATE TABLE your_error_table (
+  file VARCHAR,
+  row VARIANT,
+  errors ARRAY,
+  first_error VARCHAR
+);
+
+The error table should have columns that correspond to the error information that Snowflake captures:
+
+file: The name of the file containing the error.
+row: The row that encountered the error.
+errors: An array containing information about the errors.
+first_error: The first error encountered.
+Please adapt the error table structure based on your specific error tracking needs.
+
+The ON_ERROR option has several settings:
+CONTINUE: Continue loading subsequent files even if an error occurs in one of the files. The COPY command will still return an error at the end if any errors occurred.
+
+ABORT_STATEMENT: Abort the entire COPY INTO statement if an error occurs in any file.
+
+SKIP_FILE: Skip the current file if an error occurs and continue with the next file. The COPY command will still return an error at the end if any errors occurred.
 
 **SF maintains the hash value for each file in S3 so that it wont load same file again.If we make Force as True, it will load same file again
 Purge=True|False --once file is loaded into table, file will be deleted from S3.Defualt it is False
 
 **there is a view called Load_History in information schema, that holds all the files information of past 14 days copy command loaded into table.
-==========================================================================
-Loading JSON/XML data:
-use parse_json(data) --for json parser
-table(flatten(column)) --for flattening the array
-==========
 
+We can not directly capture errors in snowpipe.
+
+======================================================================================================================================================
+Snowpipe 																		
+Continuous Data Ingestion --Snowpipe provides a continuous, near-real-time data ingestion mechanism. It's designed for scenarios where you have data arriving continuously, such as streaming data or new files being added to a cloud storage location
+
+Event-Driven Loading --Snowpipe is event-driven, meaning that it automatically detects new files in a specified external stage (like an Amazon S3 bucket or a Azure Blob Storage container) and loads them into the target table without manual intervention
+
+Automatic Scaling --Snowpipe is built for automatic scaling. It can automatically scale resources to handle varying data loads, ensuring that the data pipeline can efficiently process incoming data.
+
+Usage of Snowflake Credits --Snowpipe may consume Snowflake credits for the computing resources used during the ingestion process.
+
+And yes, warehouse should be active always.
+
+COPY INTO Command: --mainly for OTL / History loads
+Batch Data Loading:
+The COPY INTO command is used for batch loading of data. It is suitable for scenarios where you have a set of data files that you want to load into a table at a specific point in time.	
+
+Manual Execution:
+Unlike Snowpipe, the COPY INTO command requires manual execution by the user. You initiate the copy process when you want to load the data.			
+
+Explicit Control:
+The COPY INTO command provides more explicit control over the data loading process. Users can specify options like file format, field delimiter, and other parameters.	
+
+Use Cases:
+COPY INTO is often used for one-time or periodic data loads, such as loading historical data or scheduled batch loads	
+
+Snowflake Credits Usage:
+Similar to Snowpipe, the COPY INTO command may consume Snowflake credits for the computing resources used during the data loading process.	
+
+****************************
 We can not capture error records using snowpipe.
 We can not alter copy command inside snowpipe
 
 Create snowpipe on bucket level not folder level. Create one pipe for S3.
 
-**COpy command will look for only hash change in file(if new file arrived or any existing file got updated)
-**where as snowpipe, will look for change in name of the file, it wont check on data inside the file.
-================
-Data sharing in SF:
-No need to physically move data from one storage to another storage of anther account. We just have to share metadata information.
-using share i.e create share share_name;
-alter share_name add account'second accoutn name'
-grant all permissions on the required objects/tables to above share 
-check for inbound of second account in shares and create a database there itself.When you query this database it will actually fetch data from first 
-account.
-**secure, since we are sharing tables to second account and we dont want to expose all the columns in that table.
-in that case, create a view on top of table with required columns and grant the select to share_name but you will see an error saying
-only secure view can be shared. hence secure keyword while creating the view.
-==================
-Time Travel:
-select * from emp(offset=60*min)
+**Copy command will look for only hash change in file(if new file arrived or any existing file got updated)
+**where as snowpipe, will look for change in name of the file, it wont check on data inside the file with hash.
+
+Internal mechanism how snowpipe works:
+Here's a more detailed explanation of the internal mechanism:
+
+Event Notification Configuration: When setting up Snowpipe, you configure it to monitor a specific event queue for notifications from your cloud storage service. This event queue is typically managed by the cloud storage service itself, such as Amazon SQS for Amazon S3 or Azure Event Grid for Azure Blob Storage.
+
+Event Queue Polling: Snowpipe runs a background process that continuously polls the event queue for new notifications. The polling interval can be configured to optimize performance and resource utilization.
+
+Notification Processing: Upon receiving a notification, Snowpipe extracts the relevant information from the notification, such as the file path and file size. It then uses this information to locate the new file in the cloud storage and initiate the data loading process.
+
+Data Loading Process: Snowpipe reads the new file, parses the data, and loads it into the specified Snowflake table. The data loading process is optimized for performance and efficiency, utilizing parallel processing and data compression techniques.
+
+Error Handling: Snowpipe maintains a log of its activities and tracks any errors that occur during the data loading process. Error notifications can be configured to alert administrators or trigger remediation actions.
+
+======================================================================================================================================================
+Snowpipe with REST endpoints :
+
+
+======================================================================================================================================================
+Loading JSON/XML data:
+use parse_json(data) --for json parser
+table(flatten(column)) --for flattening the array
+
+Steps to load from AWS S3 to Snowflake:
+-- Create an external stage
+CREATE STAGE my_s3_stage
+  URL = 's3://your-s3-bucket/'
+  CREDENTIALS = (
+    AWS_KEY_ID = 'your-access-key-id',
+    AWS_SECRET_KEY = 'your-secret-access-key'
+  );
+
+-- Create a raw table
+CREATE TABLE raw_products_table (raw_data VARIANT);
+
+-- Create a pipe
+CREATE PIPE products_pipe
+  AUTO_INGEST = TRUE
+  AS
+  COPY INTO raw_products_table
+  FROM '@my_s3_stage/path/to/products.json';
+
+-- Create a cleansed table
+CREATE TABLE cleansed_products_table AS
+SELECT
+  raw_data:value:product_id::INTEGER AS product_id,
+  raw_data:value:name::STRING AS name,
+  raw_data:value:price::FLOAT AS price,
+  raw_data:value:category::STRING AS category,
+  raw_data:value:attributes:color::STRING AS color,
+  raw_data:value:attributes:size::STRING AS size,
+  raw_data:value:attributes:weight::FLOAT AS weight
+FROM raw_products_table;
+**************************************
+now, to read from relational table and unload as json format, then use object_construct method like below:
+
+-- Create a table
+CREATE OR REPLACE TABLE mytable (
+ id number(8) NOT NULL,
+ first_name varchar(255) default NULL,
+ last_name varchar(255) default NULL,
+ city varchar(255),
+ state varchar(255)
+);
+
+-- Populate the table with data
+INSERT INTO mytable (id,first_name,last_name,city,state)
+ VALUES
+ (1,'Ryan','Dalton','Salt Lake City','UT'),
+ (2,'Upton','Conway','Birmingham','AL'),
+ (3,'Kibo','Horton','Columbus','GA');
+
+-- Unload the data to a file in a stage
+SELECT OBJECT_CONSTRUCT('id', id, 'first_name', first_name, 'last_name', last_name, 'city', city, 'state', state) FROM mytable;
+
+-- The output contains the following data:
+{"city":"Salt Lake City","first_name":"Ryan","id":1,"last_name":"Dalton","state":"UT"}
+{"city":"Birmingham","first_name":"Upton","id":2,"last_name":"Conway","state":"AL"}
+{"city":"Columbus","first_name":"Kibo","id":3,"last_name":"Horton","state":"GA"}
+
+======================================================================================================================================================
+Types of tables:
+1.Permament table(create table emp)--retention period(time travel)=true,faile safe=true --default 24hrs --however we can change it according to our need. and we can set it at account, database and table level.
+
+ALTER ACCOUNT SET TIME_TRAVEL_RETENTION_TIME_IN_DAYS = 7;
+ALTER DATABASE your_database SET TIME_TRAVEL_RETENTION_TIME_IN_DAYS = 7;
+ALTER TABLE your_table SET TIME_TRAVEL_RETENTION_TIME_IN_DAYS = 7;
+
+2.Transient table(create transient table emp)--retention period(time travel)=true,faile safe=false--same as regular / permanent tables but only difference is it will not have fail safe.
+3.Temporary table(create temporary table emp)--retention period(time travel)=false,faile safe=false
+                                              --temporary table will only be available for a session or worksheet.
+											  
+======================================================================================================================================================
+Time Travel(Querying Historical Data):
+
+The following query selects historical data from a table as of the date and time represented by the specified timestamp:
+SELECT * FROM my_table AT(TIMESTAMP => 'Fri, 01 May 2015 16:20:00 -0700'::timestamp_tz);
+
+The following query selects historical data from a table as of 5 minutes ago:
+SELECT * FROM my_table AT(OFFSET => -60*5);
+
+The following query selects historical data from a table up to, but not including any changes made by the specified statement:
+SELECT * FROM my_table BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');
+
+Fail safe:
+It is feature in snowflake, once time travel period ends, it will move to fail safe. How ever, user can not directly access from fail safe , only snowflake team can restore the data from fail safe upon request from user / customer											  
+***********
+Here are the default Time Travel and Fail-safe periods for each Snowflake account type:
+
+Standard Edition:
+Time Travel: 1 day
+Fail-safe: 1 day
+
+Enterprise Edition:
+Time Travel: 90 days
+Fail-safe: 7 days
+
+Business Critical Edition:
+Time Travel: 90 days
+Fail-safe: 90 days
+
+======================================================================================================================================================
+Restoring to prevous version/ state / timestamp:
+There is no straight or direct command like Restore to restore the dropped/ changed DB or table. Have to perform some workaround like below:
+
+select * from emp(offset=60*min)--eg: offset=60*5 --will fetch data before 5 min.
 1.create a backup table selecting from emp with offset
 2.truncate actual table
 3.Insert into actual table selecting from backup table.
-===============================
-Faile safe feature in SF:
-Once the time travel is end, it will enter into faile safe. For transient table it is 0 and for permanent it is 7.
-===============
-Types of tables:
-1.Permament table(create table emp)--retention period(time travel)=true,faile safe=true
-2.TRansient table(create transient table emp)--retention period(time travel)=true,faile safe=false
-3.Temporary table(create temporary table emp)--retention period(time travel)=false,faile safe=false
-                                              --temporary table will only be available for a session or worksheet.
-==========================================================
+======================================================================================================================================================
 Cloning:
 we will map the metadata of a main table to bkp table. we dont physically copy the data. create table emp_bk clone emp;
 however, if we make any dml operation on main table it will not reflect in cloned table and vice versa.
 reason is , whenever you make any change SF will create a seperate snapshots of table file in storage location.
-=========
+
+***if I make any changes on cloned object, it will create a new copy of micro partitions and incure the cost.
+
+****When you clone a database in Snowflake, it clones all the underlying objects within the database, such as schemas, tables, and views. However, some object types, like internal tables and stages, are not cloned
+
+Here's a summary of the objects that are cloned when you clone a database:
+Databases
+Schemas
+Tables
+Views
+External stage
+Snow pipes that are reference external stage
+
+However, the following object types are not cloned:
+External tables
+Internal tables (Snowflake) stages
+Pipes that reference internal (i.e., Snowflake)
+
+-- Clone a table
+CREATE TABLE new_table CLONE source_table;
+
+-- Clone a database
+CREATE DATABASE new_database CLONE source_database;
+
+-- Clone a schema
+CREATE SCHEMA new_schema CLONE source_schema;
+
+-- Clone a view
+CREATE VIEW new_view CLONE source_view;
+
+-- Clone a materialized view
+CREATE MATERIALIZED VIEW new_mv CLONE source_mv;
+
+-- Clone an external stage
+CREATE STAGE new_stage CLONE source_stage;
+
+-- Clone a pipe
+CREATE PIPE new_pipe CLONE source_pipe;
+
+-- Clone a virtual warehouse
+CREATE WAREHOUSE new_warehouse CLONE source_warehouse;
+
+======================================================================================================================================================
+Materialized Views:
+Performance Optimization:
+
+Materialized views store precomputed results, making query performance faster, especially for complex aggregations, joins, or computations. Queries against materialized views can be faster than re-computing the result each time.
+
+Aggregation and Joins:
+Materialized views are particularly useful when dealing with aggregations and joins on large datasets. They can significantly reduce query processing time by precomputing and storing aggregated or joined results.
+
+Periodic Refresh:
+Materialized views can be refreshed periodically to update the stored results based on changes in the underlying data. This allows you to strike a balance between query performance and data freshness.
+
+Consistency and Stability:
+Materialized views provide a stable and consistent snapshot of the data at the time of the last refresh. This can be beneficial in scenarios where consistency is more critical than real-time data.
+
+Creating New Tables Every Time:
+Dynamic or Ad Hoc Queries:
+If your queries are dynamic and ad hoc, and the structure or criteria of the queries change frequently, creating new tables on-the-fly might be more suitable. This approach allows flexibility in adapting to changing requirements.
+
+Real-time Data Requirements:
+If you need real-time or near-real-time access to the latest data, creating new tables allows you to query the most up-to-date information without waiting for a materialized view to be refreshed.
+
+Simplicity and Transparency:
+Creating new tables simplifies the data processing flow and can make it more transparent. You don't have to manage the periodic refresh of materialized views, and each query operates directly on the raw data.
+
+Small or Medium-sized Datasets:
+For small to medium-sized datasets or queries that don't involve complex aggregations, creating new tables may not result in a significant performance difference compared to materialized views.
+
+======================================================================================================================================================
 SWAP
 we can swap two tables in SF--alter table1 swap with table2;
 **Here only metadata will change and not actual storage.(swap[ing pointer)
-======================
+======================================================================================================================================================
 Tasks:
-limitations: We can make two tasks as a parent
+limitations: We cannot make two tasks as a parent
 Task can not send email notifications
-==========
+======================================================================================================================================================
 Streams:
 Types of stream:
 standard streams--keep track of all dml(insert,delete,update) operations happened on source table.
@@ -161,81 +515,253 @@ WAREHOUSE = mywh
 AS
 SELECT var:id::int id, var:fname::string first_name,
 var:lname::string last_name FROM raw;
+======================================================================================================================================================
+INFORMATION_SCHEMA:
 
-Qns:
+in Snowflake it allows you to query and retrieve information about:
 
-1. Introduction ( Various techonoligies what are the implementations and your role on that)?
+Tables and Columns:
+TABLES: Information about tables in your account.
+COLUMNS: Information about columns in tables.
 
-2. have you implemented any securuties on snowflake. Priority 1
+Schemas and Databases:
+SCHEMATA: Information about schemas in your account.
+CATALOGS: Information about databases in your account.
 
-3. What is cloning in snowflake, If we cloned one object it will create any extra micropartition?
+Views:
+VIEWS: Information about views in your account.
 
-4. DO you ever worked on snowpark?
+Constraints:
+KEY_COLUMN_USAGE: Information about columns that are used in key constraints.
+CHECK_CONSTRAINTS: Information about check constraints.
 
-5. If you written any python or snowpark procedure what is the trigger point for execution.
+Statistics:
+STATISTICS: Information about statistics collected for tables and columns.
 
-6. SF Archetecture?
+Routines:
+ROUTINES: Information about stored procedures, functions, and other routines.
 
-7. I have an account in Project level and I will assign some credits to each warehouse and if certain credits exceeded it should notify how you achive this?
+======================================================================================================================================================
+ACCOUNT_USAGE:
+In Snowflake, the Account Usage schema provides information about object usage and metrics for your account. 
 
-8. Do you know time travel in snowflake.How I can change my Time travel parameters? Priority 2
+The Account Usage schema in Snowflake provides a set of views and table functions that allow you to query metadata and historical usage data for your Snowflake account. This information can be used to track resource consumption, identify usage patterns, and troubleshoot performance issues.
 
-9. What is dynamic tables?
+The Account Usage schema contains several views that provide information about your Snowflake account, such as:
 
-CREATE [ OR REPLACE ] DYNAMIC TABLE <name>
+ACCOUNT_USAGE: This view provides a summary of usage for your Snowflake account, including CPU time, IO operations, and bytes processed.
+DATABASE_USAGE: This view provides usage information for individual Snowflake databases, including CPU time, IO operations, and bytes processed.
+WAREHOUSE_USAGE: This view provides usage information for individual Snowflake warehouses, including CPU time, IO operations, and bytes processed.
+QUERY_HISTORY: This view provides a history of queries executed against your Snowflake account, including query text, execution time, and resource consumption.
+COPY_HISTORY: This view provides a history of COPY operations executed against your Snowflake account, including source and target locations, file formats, and transferred bytes.
 
-  TARGET_LAG = { '<num> { seconds | minutes | hours | days }' | DOWNSTREAM }
+======================================================================================================================================================
+SNOWPARK:
 
-  WAREHOUSE = <warehouse_name>
+Pandas -- application will be executed on your local machine. And your local machine memory is the limit. It may run into OOO memory issue
+PySpark -- Distributed, in memory data processing framework. actuall application will be executed on cluster nodes. Cluster is scalable accordingly.
+			And, Dataframe will be converted into RDD.
+what is snowpark? -- it is a API (Application Program Interface) --When we submit the application, Dataframe API will be converted into Snowflake compatable SQL.(complete notebook code will be converted into SQL).
 
-  AS <query>
+It is also lazily evaluated just like spark.
 
-  [ COMMENT = '<string_literal>' ]
+***
+In simple words snowpark is a snowflake's translator library, that translates your program/application written in Python/Scala/Java into SQL statement and run them in snowflake virtual warehouse using API calls.
+***
 
-10. what are the optimization things you will do?
+eg:
+I have written below snowpark code in Python language, it has been converted into equallent snowflake sql like below:
+And this query can be visible in Activity tab in snowsight, you can also analyze the query profile there itself.
 
-11. Snowpipe implementation.
+Snowpark Code:
+# The Snowpark package is required for Python Worksheets. 
+# You can add more packages by selecting them using the Packages control and then importing them.
 
-12. which language you preffered for snowflake procs. exception handling?
+import snowflake.snowpark as snowpark
+from snowflake.snowpark.functions import col
 
-13. What is the maximum limit in snowflake table to store single record.
+def main(session: snowpark.Session): 
+    # Your code goes here, inside the "main" handler.
+    tableName = 'information_schema.packages'
+    df = session.table(tableName).filter(col("language") == 'scala')
+    df1 = session.table(tableName).filter(col("language") == 'java')
+    df2=df.union(df1)
 
-14. Have you worked on flattern function in snowflake, where you implemented.
+    # Print a sample of the dataframe to standard output.
+    df2.show()
 
-15. Suppose you are executed on procedures but are getting some error? might be something was missing due to that you are getting error what are those.?
+    # Return value will appear in the Results tab.
+    return df2
+	
+Converted into SQL by Snowflake:
+( SELECT  *  FROM information_schema.packages WHERE ("LANGUAGE" = 'scala')) UNION ( SELECT  *  FROM information_schema.packages WHERE ("LANGUAGE" = 'java'))
 
-16. what is fututre grants?
+And yeah, this code will be executed in wharehouse only.
 
-17.
- 
----------------------
+Limitations of snowpark:
+it reads data only from internal stage, external stage and tables.
 
-1. Introduction ( Various techonoligies what are the implementations and your role on that)?
+It will NOT read from any RDBMS (using like JDBC or ODBC) or web API's or streaming.
+It will NOT infer schema, you have to create your own schema and attach it.
+======================================================================================================================================================
+Secure Views:
 
-3. what are the optimization things you will do?
+For a non-secure view, internal optimizations can indirectly expose data.
+For a non-secure view, the view definition is visible to other users
 
-2. I have an account in Project level and I will assign some credits to each warehouse and if certain credits exceeded it should notify how you achive this?
+For security or privacy reasons, you might not wish to expose the underlying tables or internal structural details for a view. With secure views, the view definition and details are visible only to authorized users (i.e. users who are granted the role that owns the view).
 
-4. What is the maximum limit in snowflake table to store single record.
+When Should I Use a Secure View?
+Views should be defined as secure when they are specifically designated for data privacy (i.e. to limit access to sensitive data like PII(Personally Identifiable Information)that should not be exposed to all users of the underlying table(s)).
 
-5. Have you worked on flattern function in snowflake, where you implemented.
+Usage:
+Secure views are recommended for limiting access to sensitive data that should not be exposed to all users of the underlying table(s) 
+The view definition and details are visible only to authorized users (i.e., users who are granted the role that owns the view) 
+Secure views can execute more slowly than non-secure views, so it's important to weigh the trade-off between data privacy/security and query performance
 
-6. what are the languages supported for stored procedures in Snowflake?
+======================================================================================================================================================
+Row level security:
+1.Create a table to apply Row-Level Security: Let's consider the emp table as an example for the demonstration of row-level security using secure views. First, create the emp table with required sample data in the hr schema of the analytics_db database. 
 
-7. In javascript proc how to use bind variables?
+use role SYSADMIN;
+create or replace database analytics_db;
+create or replace schema analytics_db.hr;
+create table analytics_db.hr.emp (
+   emp_id integer,
+   emp_name varchar(50),
+   emp_dept varchar(50),
+   emp_salary integer
+);
+insert into analytics_db.hr.emp values (1, 'John', 'Sales', 50000);
+insert into analytics_db.hr.emp values (2, 'Jane', 'Marketing', 60000);
+insert into analytics_db.hr.emp values (3, 'Bob', 'Sales', 55000);
+insert into analytics_db.hr.emp values (4, 'Alice', 'Marketing', 65000);
 
-6. DO you know ROles and Privilages in snowflake?
+2.Create a Role Mapping table: Create a role mapping table to map the custom roles to the employees.
+create table analytics_db.hr.role_mapping (
+   emp_id integer,
+   role_name varchar(50)
+);
+insert into analytics_db.hr.role_mapping values (1, 'sales_role');
+insert into analytics_db.hr.role_mapping values (2, 'marketing_role');
+insert into analytics_db.hr.role_mapping values (3, 'sales_role');
+insert into analytics_db.hr.role_mapping values (4, 'marketing_role');
 
-What type of Access control available in snowflake?
+3.Create a Secure View on source table using role mapping table: Create a secure view on the emp table using the role_mapping table to apply row-level security. 
 
-7. what is fututre grants?
+create secure view analytics_db.hr.secure_emp_view as
+select emp_id, emp_name, emp_dept, emp_salary
+from analytics_db.hr.emp
+where emp_id in (
+   select emp_id
+   from analytics_db.hr.role_mapping
+   where role_name = current_role() --*************************IMP. Here data is visible from table through view only based on his current role.
+);
 
-8. What Scale out?
+4.Query and verify Row-Level Security on data using custom roles: Verify the data returned for each user when queried on the same view
 
-9. What is Sclae up and down?
+use role sales_role;
+select * from analytics_db.hr.secure_emp_view; -- returns only sales employees
+use role marketing_role;
+select * from analytics_db.hr.secure_emp_view; -- returns only marketing employees
 
-10. What is stream ? one example
+======================================================================================================================================================
+Column-level security:
+Column-level security allows for the control of access to specific columns within a table based on the user's execution context or group membership.
 
-Products
+Example of Column-Level Security
+Let's consider an example of column-level security in the context of a hypothetical "Employee" table with sensitive information such as salary. In this example, we want to restrict access to the "Salary" column based on user roles.
 
-11. Window Functions?
+CREATE TABLE Employee (
+    EmployeeID INT,
+    Name VARCHAR(100),
+    Department VARCHAR(100),
+    Salary INT
+);
+
+Implementation:
+In a SQL query, the implementation of column-level security might look like this:
+sql
+-- Grant SELECT permission on specific columns to different roles
+GRANT SELECT ON Employee (EmployeeID, Name, Department) TO SalesManagers;
+GRANT SELECT ON Employee (EmployeeID, Name, Department, Salary) TO HRManagers;
+
+Flow:
+create a role role_name
+grant role to user user_1,user_2 etc
+grant select / read/ write on table_name(column names) to role_name
+
+======================================================================================================================================================
+Working with shares:
+
+Snowflake offers a feature called Secure Data Sharing, which allows you to share selected objects in a database with other Snowflake accounts. You can share the following Snowflake database objects:
+Tables
+External tables
+Secure views
+Secure materialized views
+Secure UDFs
+*****normal views are not allowed for data sharing, only secure views allowed.
+***** only account owner can create the share
+*****Data provider will be charged for data storing and processing and data consumer will be charged for quering
+
+To create a share in Snowflake, you can use the CREATE SHARE statement. Here's a basic syntax for creating a share:
+
+CREATE SHARE share_name COMMENT='Share description';
+
+After creating the share, you can include a database and objects from the database (schemas, tables, and views) in the share using the ADD command:
+sql
+ADD DATABASE database_name.database_name TO share_name;
+ADD TABLE table_name TO share_name;
+
+Once the share is created, you can add one or more accounts to the share using the GRANT command:
+sql
+GRANT SHARE share_name TO account_name;
+======================================================================================================================================================
+SnowSQL:
+
+SnowSQL is a command-line interface (CLI) tool for interacting with Snowflake. It allows you to run SQL queries, manage your Snowflake account, and perform other administrative tasks.
+
+SnowSQL is a powerful tool that can be used for a variety of tasks. Here are some of the most common use cases for SnowSQL:
+
+Running SQL queries: 
+SnowSQL is the primary way to run SQL queries against your Snowflake data warehouse. You can use SnowSQL to perform a wide variety of tasks, such as data analysis, data manipulation, and data loading.
+
+Managing your Snowflake account: 
+SnowSQL can be used to manage your Snowflake account, such as creating and dropping databases, creating and managing users, and setting security permissions.
+
+Performing administrative tasks: 
+SnowSQL can be used to perform a variety of administrative tasks, such as monitoring the health of your Snowflake instance, troubleshooting performance issues, and backing up your data.
+======================================================================================================================================================
+Analyzing Queries Using Query Profile:
+
+Query Profile, available through the Classic Console, provides execution details for a query. For the selected query, it provides a graphical representation of the main components of the processing plan for the query, with statistics for each component, along with details and statistics for the overall query.
+
+When to Use Query Profile:
+Query Profile is a powerful tool for understanding the mechanics of queries. It can be used whenever you want or need to know more about the performance or behavior of a particular query. It is designed to help you spot typical mistakes in SQL query expressions to identify potential performance bottlenecks and improvement opportunities.
+
+statistics we see in query profile:
+total bytes scanned
+bytes scanned from cache
+data spill over to remote storage if any
+data oruning - like how many are total micro-partitions and how many are scanned(if any micro-partitions skipped part of dynamic pruning)
+======================================================================================================================================================
+Normal grants:
+grant select on all tables in schema MY_DB.MY_SCHEMA to role TEST_ROLE;
+grant select on all tables in database MY_DB to role TEST_ROLE;
+
+Future Grants:
+grant select on future tables in schema MY_DB.MY_SCHEMA to role TEST_ROLE;
+grant select on future tables in database MY_DB to role TEST_ROLE;
+
+======================================================================================================================================================
+
+LAKEHOUSE IN SNOWFLAKE:
+#Snowflake entered the game of Lakehouses.
+Iceberg Tables (that means seeing files kept in #apacheiceberg format stored in object storage , as tables in Snowflake) are now in public preview! 
+
+After Databricks, Google BQ , recently AWS Redshift and now Snowflake, the pattern of Data Lakehouse got full traction and support from major vendors. With it you can provide a transformation and access layer to the larger pool of data stored in semistructured files with the same tools your DWH team knows - SQL, dbt, etc. without the need of going for, e.g. Spark. 
+
+Want to build an open data [lake, lakehouse, mesh, fabric] in Snowflake? Now every customer has access to a powerful set of features to make it happen - Apache Iceberg Tables are now in public preview. Amazon Web Services (AWS), Microsoft Azure, and Google Cloud customers can all get started in public preview,
+
+With Iceberg Tables, anyone with a Snowflake account can bring their own blob storage, use Apache Parquet as the file format, and have table metadata persisted in Apache Iceberg. We bring the awesome Snowflake performance, an easy-to-use platform, and a lot of powerful features that work on top of open formats/standards. 
+

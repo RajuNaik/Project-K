@@ -1,0 +1,46 @@
+Interview Qns:
+
+1. Introduction ( Various techonoligies what are the implementations and your role on that)?
+2. have you implemented any securuties on snowflake. Priority 1
+3. What is cloning in snowflake, If we cloned one object it will create any extra micropartition?
+4. DO you ever worked on snowpark?
+5. If you written any python or snowpark procedure what is the trigger point for execution.
+6. SF Archetecture?
+7. I have an account in Project level and I will assign some credits to each warehouse and if certain credits exceeded it should notify how you achive this?
+8. Do you know time travel in snowflake.How I can change my Time travel parameters? Priority 2
+9. What is dynamic tables?
+CREATE [ OR REPLACE ] DYNAMIC TABLE <name>
+  TARGET_LAG = { '<num> { seconds | minutes | hours | days }' | DOWNSTREAM }
+  WAREHOUSE = <warehouse_name>
+  AS <query>
+  [ COMMENT = '<string_literal>' ]
+  
+10. what are the optimization things you will do?
+11. Snowpipe implementation.
+12. which language you preffered for snowflake procs. exception handling?
+13. What is the maximum limit in snowflake table to store single record.
+14. Have you worked on flattern function in snowflake, where you implemented.
+15. Suppose you are executed on procedures but are getting some error? might be something was missing due to that you are getting error what are those.?
+16. what is fututre grants?
+
+17.
+ 
+---------------------
+
+1. Introduction ( Various techonoligies what are the implementations and your role on that)?
+3. what are the optimization things you will do?
+2. I have an account in Project level and I will assign some credits to each warehouse and if certain credits exceeded it should notify how you achive this?
+4. What is the maximum limit in snowflake table to store single record.
+5. Have you worked on flattern function in snowflake, where you implemented.
+6. what are the languages supported for stored procedures in Snowflake?
+7. In javascript proc how to use bind variables?
+6. DO you know ROles and Privilages in snowflake?
+What type of Access control available in snowflake?
+
+7. what is fututre grants?
+8. What Scale out?
+9. What is Sclae up and down?
+10.What is stream ? one example
+
+Products
+11. Window Functions?
