@@ -1,0 +1,77 @@
+HackerRank Test:
+Difficulty level - Moderate
+Thoeritcal questions on Azure and SQL.All are MCQ's
+eg:
+1.Which Azure service is used for virtual machine deployment and management?
+2.What is the primary purpose of Azure Blob Storage?
+3.Which Azure service provides a scalable cloud database with multi-region, multi-model database support?
+4.What does Azure Resource Manager (ARM) provide in Azure?
+5.Which Azure service is designed for big data analytics and allows you to analyze large datasets in real-time?
+6.Which Azure service is used for serverless event processing and real-time analytics?
+
+7.DDL's will be given along with scenarios. You need to choose the right SQL query. Need to be extra careful as all queries looks same with negligible differences
+
+Technical round 1 for 15min:
+Difficulty level - Moderate
+1.Your career journey
+2.Most recent Projets you worked on based on relevant skill set
+3.Be prepared with JD and role you applied for
+4.Explain any automation or process improvement you have implemented
+5.Some high level questions on your relevant skills
+
+Technical round 2 for 1hr:
+Difficulty level - High
+1.Explain yourself and your career journey
+2.Explain your most recent project
+3.Talk about azure services involved in any data engineering project. Here you need to pick any realtime scenario and explain end to end.
+4.Then expect the questions from point 3.
+
+5.Expect questions on Databricks
+eg:
+Spark architecture
+How many executors will you assign for 10GB file in HDFS?
+How many cores are needed for each executor and what amount of memory required for each executor?
+what is on-heap memory?what is off-heap memory? which is faster?
+Spark API's(RDD,Dataframe,Dataset) and their differences
+Handling error records
+repartition,Shuffle Partition,coalesce
+partitionBy and bucketBy are used while writing only
+Cache vs Persist
+Broadcast variable, AQE
+DELTA LAKE internal mechanism and features
+DAG's
+Performance optimizations techniques in spark
+Delta Live Tables and Unity Catalog
+
+
+6.Scenarios will be given(panel will share the screen for question) and you need to write Pyspark code for given scenario by shareing your screen
+
+7.Scenarios will be given(panel will share the screen for question) and you need to write SQL Queries for given scenario by shareing your screen
+Be well prepared for advanced SQLs' eg: Window functions like Rank, Dense Rank,Row number, LEAD, LAG,CTE's, Aggregations,Joins,Pivoting etc.
+
+8.Scenarios will be given(panel will share the screen for question) and you need to write Python code for given scenario by shareing your screen
+Expect questions on data structures like Stings, arrays, lists, tuples, sets, dictionaries and their manipulations
+loops and iterations like "for"
+Regex
+
+Hiring manager round for 1hr:
+Difficulty level - High
+1.Read some blogs or websites to know more about PepsiCo
+2.Take any realtime scenario and automate it (in Databricks or Snowflake --your choice)
+3.Expect some technical questions too like above for around 20-30min
+4.You will be tested in people management area(depends on role you applied)
+5.Talk about your strengths and weakness (DO NOT stress more on your weakness)
+6.Expect question like, tell me good and bad about PepsiCo(again DO NOT talk any bad about PepsiCo just for sake of answering)
+Note some good points about PepsiCo like how it is adapting new technologies into their business, sustainibilty etc.
+7.Mske sure you ask any question in the end
+
+HR Round for 30min:
+1.What do you know about PepsiCo and the role you are applying for
+2.your career journey
+3.Then HR will talk about Benefits
+
+
+
+
+
+
