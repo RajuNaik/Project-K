@@ -25,7 +25,6 @@ Difficulty level - High
 2.Explain your most recent project
 3.Talk about azure services involved in any data engineering project. Here you need to pick any realtime scenario and explain end to end.
 4.Then expect the questions from point 3.
-
 5.Expect questions on Databricks
 eg:
 Spark architecture
@@ -111,7 +110,7 @@ Spot the mistake in slightly different-looking queries
 Write SQL to update a record only if it exists; otherwise, insert it (MERGE logic)
 
 
-Round 6 - Hiring manager round for 1hr:
+Round 6 - Hiring manager round for 1hr: - Expect more than 1 interview panel
 Difficulty level - High
 1.Read some blogs or websites to know more about PepsiCo
 2.Take any realtime scenario and automate it (in Databricks or Snowflake --your choice)
@@ -124,8 +123,9 @@ Note some good points about PepsiCo like how it is adapting new technologies int
 
 Round 7 - HR Round for 30min:
 1.What do you know about PepsiCo and the role you are applying for
-2.your career journey
-3.Then HR will talk about Benefits
+2. Why Pepsi
+3.your career journey
+4.Then HR will talk about Benefits
 
 
 
