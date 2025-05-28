@@ -1,3 +1,4 @@
+Round 1:
 HackerRank Test:
 Difficulty level - Moderate
 Thoeritcal questions on Azure and SQL.All are MCQ's
@@ -8,10 +9,9 @@ eg:
 4.What does Azure Resource Manager (ARM) provide in Azure?
 5.Which Azure service is designed for big data analytics and allows you to analyze large datasets in real-time?
 6.Which Azure service is used for serverless event processing and real-time analytics?
-
 7.DDL's will be given along with scenarios. You need to choose the right SQL query. Need to be extra careful as all queries looks same with negligible differences
 
-Technical round 1 for 15min:
+Round 2 - Technical(15min)
 Difficulty level - Moderate
 1.Your career journey
 2.Most recent Projets you worked on based on relevant skill set
@@ -19,7 +19,7 @@ Difficulty level - Moderate
 4.Explain any automation or process improvement you have implemented
 5.Some high level questions on your relevant skills
 
-Technical round 2 for 1hr:
+Round 3 - Technical(1hr) - Expect more than 1 interview panel
 Difficulty level - High
 1.Explain yourself and your career journey
 2.Explain your most recent project
@@ -42,19 +42,76 @@ DELTA LAKE internal mechanism and features
 DAG's
 Performance optimizations techniques in spark
 Delta Live Tables and Unity Catalog
-
-
 6.Scenarios will be given(panel will share the screen for question) and you need to write Pyspark code for given scenario by shareing your screen
-
 7.Scenarios will be given(panel will share the screen for question) and you need to write SQL Queries for given scenario by shareing your screen
 Be well prepared for advanced SQLs' eg: Window functions like Rank, Dense Rank,Row number, LEAD, LAG,CTE's, Aggregations,Joins,Pivoting etc.
-
 8.Scenarios will be given(panel will share the screen for question) and you need to write Python code for given scenario by shareing your screen
 Expect questions on data structures like Stings, arrays, lists, tuples, sets, dictionaries and their manipulations
 loops and iterations like "for"
 Regex
 
-Hiring manager round for 1hr:
+Round 4 – Python (1hr)
+Difficulty Level: Moderate to High
+Expected Topics:
+Core Python ConceptsData types, loops, conditional statements
+List comprehension vs traditional loops
+*args and **kwargs
+Exception handling – try-except-finally blocks
+File handling basics
+Object-Oriented Programming (OOP)
+Class, Object, Inheritance, Polymorphism
+Use case scenario-based OOP implementation
+Data Manipulation using Python
+Working with dictionaries, nested data
+JSON parsing
+Regular expressions (re module)
+Pandas and NumPy
+DataFrame operations, filtering, grouping
+Handling nulls, merging, joins
+Performance tuning in Pandas
+Broadcasting and vectorization in NumPy
+Automation Scripts
+Python scripts for data loading (e.g., to/from Blob, SFTP, REST API)
+Sample: Write a script to read a CSV file, remove duplicates, and write to Azure Blob.
+Unit Testing and Logging
+unittest or pytest usage
+Logging best practices using logging module
+
+Scenarios:
+You’re given a REST API and asked to write a Python script to extract and store data in a Delta table using PySpark.
+Write a function to validate column types in a given schema.
+
+Round 5 – SQL (1hr)
+Difficulty Level: High
+
+Expectations:
+Advanced SQL Concepts
+Window functions (ROW_NUMBER, RANK, LAG/LEAD)
+CTEs, recursive CTEs
+Complex joins, anti-joins, self-joins
+EXISTS vs IN vs JOIN
+Subqueries and correlated subqueries
+Data Transformation Scenarios
+Pivot and unpivot
+Aggregations with GROUP BY ROLLUP/CUBE
+Conditional aggregations using CASE WHEN
+Finding duplicates, gaps in sequences, etc.
+Performance Tuning
+Indexing (clustered/non-clustered)
+Query optimization techniques
+Reading execution plans
+Transactional Concepts
+ACID properties
+Isolation levels (Read committed, Snapshot, etc.)
+Real-Time Scenarios
+You are given sales and product tables and asked to identify top 5 products by category based on average revenue.
+Write a query to find the second highest salary in a department without using LIMIT/TOP.
+DDL/DML based Scenarios
+Spot the mistake in slightly different-looking queries
+Write SQL to update a record only if it exists; otherwise, insert it (MERGE logic)
+
+
+Round 6 - Hiring manager round for 1hr:
 Difficulty level - High
 1.Read some blogs or websites to know more about PepsiCo
 2.Take any realtime scenario and automate it (in Databricks or Snowflake --your choice)
@@ -65,7 +122,7 @@ Difficulty level - High
 Note some good points about PepsiCo like how it is adapting new technologies into their business, sustainibilty etc.
 7.Mske sure you ask any question in the end
 
-HR Round for 30min:
+Round 7 - HR Round for 30min:
 1.What do you know about PepsiCo and the role you are applying for
 2.your career journey
 3.Then HR will talk about Benefits
