@@ -73,7 +73,7 @@ Expect questions on data structures like Stings, arrays, lists, tuples, sets, di
 loops and iterations like "for"
 Regex
 
-Round 5 – Python (1hr)
+Round 5 – Python or Scala (1hr)
 Difficulty Level: Moderate to High
 Expected Topics:
 Core Python ConceptsData types, loops, conditional statements
