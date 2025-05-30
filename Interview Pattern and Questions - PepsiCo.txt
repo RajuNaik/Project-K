@@ -11,7 +11,7 @@ eg:
 6.Which Azure service is used for serverless event processing and real-time analytics?
 7.DDL's will be given along with scenarios. You need to choose the right SQL query. Need to be extra careful as all queries looks same with negligible differences
 
-Round 2 - Technical(15min)
+Round 2 - Technical(15min) --Mostly from Snr Directors
 Difficulty level - Moderate
 1.Your career journey
 2.Most recent Projets you worked on based on relevant skill set
