@@ -19,7 +19,31 @@ Difficulty level - Moderate
 4.Explain any automation or process improvement you have implemented
 5.Some high level questions on your relevant skills
 
-Round 3 - Technical(1hr) - Expect more than 1 interview panel
+Round 3 - Core System Design Points for Data Engineers
+Difficulty level - Moderate to High
+1. Design a batch pipeline to extract, transform, and load data from source systems into a data lake or warehouse.
+2. Build a real-time pipeline using Kafka/Event Hubs and Spark/Flink to process streaming data with low latency.
+3. Use a Lakehouse architecture with Bronze, Silver, and Gold layers for scalable and governed analytics.
+4. Implement CDC (Change Data Capture) to track and replicate data changes from source to target systems.
+5. Handle schema evolution gracefully using columnar formats (Parquet, Avro) with schema registry support.
+6. Partition data effectively by date or business key to optimize query performance and scalability.
+7. Manage late-arriving data using watermarking and windowed aggregations in streaming engines.
+8. Ensure pipeline idempotency to avoid duplicate records during retries or failures.
+9. Create metadata-driven pipelines that adapt dynamically using configuration tables.
+10. Integrate monitoring and alerting for real-time visibility into pipeline health and performance.
+11. Apply data quality checks like null checks, duplicates, and validation rules before writing to final tables.
+12. Use data masking and encryption to secure sensitive fields like PII or financial information.
+13. Design multi-tenant platforms with compute, storage, and access isolation per client or team.
+14. Adopt event-driven triggers for real-time ingestion on file arrival or API notifications.
+15. Implement retry and error handling with exponential backoff and dead-letter queues.
+16. Enable historical backfill using parameterized jobs that rerun past partitions or time windows.
+17. Use staging layers to validate raw data before moving to refined or curated layers.
+18. Leverage Delta Lake features like time travel and vacuuming for version control and cleanup.
+19. Implement SCD logic using Type 1/2 to track historical changes in dimension tables.
+20. Optimize storage and queries using file formats like Delta/Parquet and Z-order indexing.
+
+
+Round 4 - Technical- Cloud(1hr) - Expect more than 1 interview panel
 Difficulty level - High
 1.Explain yourself and your career journey
 2.Explain your most recent project
@@ -49,7 +73,7 @@ Expect questions on data structures like Stings, arrays, lists, tuples, sets, di
 loops and iterations like "for"
 Regex
 
-Round 4 – Python (1hr)
+Round 5 – Python (1hr)
 Difficulty Level: Moderate to High
 Expected Topics:
 Core Python ConceptsData types, loops, conditional statements
@@ -80,7 +104,7 @@ Scenarios:
 You’re given a REST API and asked to write a Python script to extract and store data in a Delta table using PySpark.
 Write a function to validate column types in a given schema.
 
-Round 5 – SQL (1hr)
+Round 6 – SQL (1hr)
 Difficulty Level: High
 
 Expectations:
@@ -110,7 +134,7 @@ Spot the mistake in slightly different-looking queries
 Write SQL to update a record only if it exists; otherwise, insert it (MERGE logic)
 
 
-Round 6 - Hiring manager round for 1hr: - Expect more than 1 interview panel
+Round 7 - Hiring manager round for 1hr: - Expect more than 1 interview panel
 Difficulty level - High
 1.Read some blogs or websites to know more about PepsiCo
 2.Take any realtime scenario and automate it (in Databricks or Snowflake --your choice)
@@ -121,7 +145,7 @@ Difficulty level - High
 Note some good points about PepsiCo like how it is adapting new technologies into their business, sustainibilty etc.
 7.Mske sure you ask any question in the end
 
-Round 7 - HR Round for 30min:
+Round 8 - HR Round for 30min:
 1.What do you know about PepsiCo and the role you are applying for
 2. Why Pepsi
 3.your career journey
